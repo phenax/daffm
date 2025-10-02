@@ -1,5 +1,6 @@
 module Daffm where
 
+import Brick (suspendAndResume')
 import qualified Brick.Main as M
 import qualified Brick.Types as T
 import qualified Brick.Widgets.Edit as Editor
@@ -18,6 +19,7 @@ import qualified Graphics.Vty as V
 import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
 import System.FilePath (takeDirectory)
 import qualified System.PosixCompat as Posix
+import System.Process (callProcess)
 
 type AppEvent = T.EventM FocusTarget AppState
 
@@ -33,7 +35,9 @@ openSelectedFile = do
     Just (FileInfo {filePath, fileType = Directory}) ->
       modifyM (liftIO . loadDirInAppState filePath stateCwd)
     Just (FileInfo {filePath, fileType}) -> do
-      liftIO . putStrLn $ "Opening " <> show fileType <> ": " <> filePath
+      suspendAndResume' $ do
+        callProcess "nvim" [filePath]
+        putStrLn $ "Opening " <> show fileType <> ": " <> filePath
       pure ()
     Nothing -> pure ()
   pure ()
@@ -47,8 +51,8 @@ appEvent :: T.BrickEvent FocusTarget e -> AppEvent ()
 appEvent brickevent@(T.VtyEvent event) = do
   focusTarget <- gets stateFocusTarget
   case (focusTarget, event) of
-    (_, V.EvKey V.KEsc []) -> modify (\st -> st {stateFocusTarget = FocusMain})
-    (_, V.EvKey (V.KChar ':') []) -> modify (\st -> st {stateFocusTarget = FocusCmdline})
+    (FocusCmdline, V.EvKey V.KEsc []) -> modify (\st -> st {stateFocusTarget = FocusMain})
+    (FocusMain, V.EvKey (V.KChar ':') []) -> modify (\st -> st {stateFocusTarget = FocusCmdline})
     (FocusMain, V.EvKey (V.KChar 'q') []) -> M.halt
     (FocusMain, V.EvKey (V.KChar 'l') []) -> openSelectedFile
     (FocusMain, V.EvKey (V.KChar 'h') []) -> goBackToParentDir
