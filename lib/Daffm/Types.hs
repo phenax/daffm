@@ -1,5 +1,6 @@
 module Daffm.Types where
 
+import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import System.Posix.Types (FileOffset)
 
@@ -21,8 +22,13 @@ data FileInfo = FileInfo
   }
   deriving (Show)
 
+data FocusTarget = FocusCmdline | FocusMain deriving (Show, Eq, Ord)
+
 data AppState = AppState
-  { stateFiles :: L.List () FileInfo,
+  { stateFiles :: L.List FocusTarget FileInfo,
+    stateCmdlineEditor :: Editor.Editor String FocusTarget,
+    stateFocusTarget :: FocusTarget,
+    -- stateFocusRing :: FocusRing FocusTarget,
     stateCwd :: FilePath,
     stateParentDir :: FilePath
   }

@@ -1,17 +1,31 @@
 module Daffm.Attrs where
 
 import qualified Brick.AttrMap as A
-import Brick.Util (fg)
+import Brick.Util (bg, fg)
+import Brick.Widgets.List (listAttr, listSelectedAttr)
 import qualified Brick.Widgets.List as L
 import qualified Graphics.Vty as V
 
-selectedFileAttr :: A.AttrName
-selectedFileAttr = A.attrName "selected-file"
+fileAttr :: A.AttrName
+fileAttr = listAttr <> A.attrName "file"
+
+fileSelectedAttr :: A.AttrName
+fileSelectedAttr = listSelectedAttr <> fileAttr
+
+directoryAttr :: A.AttrName
+directoryAttr = listAttr <> A.attrName "directory"
+
+directorySelectedAttr :: A.AttrName
+directorySelectedAttr = listSelectedAttr <> directoryAttr
 
 appAttrMap :: A.AttrMap
 appAttrMap =
   A.attrMap
     V.defAttr
     [ (L.listAttr, fg V.white),
-      (selectedFileAttr, fg V.cyan)
+      (listSelectedAttr, bg V.black),
+      (directoryAttr, fg V.brightCyan),
+      (directorySelectedAttr, fg V.brightCyan),
+      (fileAttr, fg V.white),
+      (fileSelectedAttr, fg V.white)
     ]

@@ -2,11 +2,12 @@ module Daffm where
 
 import qualified Brick.Main as M
 import qualified Brick.Types as T
+import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Monad (forM)
-import Control.Monad.State (MonadIO (liftIO), get, gets, modify)
+import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, modify, put)
 import Daffm.Attrs (appAttrMap)
-import Daffm.Types (AppState (..), FileInfo (..), FileType (..))
+import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (FocusCmdline, FocusMain))
 import Daffm.View (appView)
 import Data.Char (toLower)
 import Data.List (sortBy)
@@ -18,48 +19,52 @@ import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
 import System.FilePath (takeDirectory)
 import qualified System.PosixCompat as Posix
 
-openSelectedFile :: T.EventM () AppState ()
+type AppEvent = T.EventM FocusTarget AppState
+
+modifyM :: (MonadState s m) => (s -> m s) -> m ()
+modifyM f = get >>= f >>= put
+
+openSelectedFile :: AppEvent ()
 openSelectedFile = do
-  state <- get
-  let indexM = L.listSelected . stateFiles $ state
-  let files = L.listElements . stateFiles $ state
-  let fileM = indexM >>= (files !?)
-  case fileM of
-    Just (FileInfo {filePath, fileType = Directory}) -> do
-      let parentDir = stateCwd state
-      nextState <- liftIO $ loadDirInAppState filePath parentDir state
-      modify (const nextState)
-      pure ()
+  AppState {stateFiles, stateCwd} <- get
+  let indexM = L.listSelected stateFiles
+  let files = L.listElements stateFiles
+  case indexM >>= (files !?) of
+    Just (FileInfo {filePath, fileType = Directory}) ->
+      modifyM (liftIO . loadDirInAppState filePath stateCwd)
     Just (FileInfo {filePath, fileType}) -> do
       liftIO . putStrLn $ "Opening " <> show fileType <> ": " <> filePath
       pure ()
     Nothing -> pure ()
   pure ()
 
-goBackToParentDir :: T.EventM () AppState ()
+goBackToParentDir :: AppEvent ()
 goBackToParentDir = do
-  state <- get
-  let dir = stateParentDir state
-  let parentDir = takeDirectory dir
-  nextState <- liftIO $ loadDirInAppState dir parentDir state
-  modify (const nextState)
+  dir <- gets stateParentDir
+  modifyM (liftIO . loadDirInAppState dir (takeDirectory dir))
 
-appEvent :: T.BrickEvent () e -> T.EventM () AppState ()
-appEvent (T.VtyEvent e) =
-  case e of
-    V.EvKey V.KEsc [] -> M.halt
-    V.EvKey (V.KChar 'q') [] -> M.halt
-    V.EvKey (V.KChar 'l') [] -> openSelectedFile
-    V.EvKey (V.KChar 'h') [] -> goBackToParentDir
-    V.EvKey V.KEnter [] -> openSelectedFile
-    V.EvKey V.KBS [] -> goBackToParentDir
-    ev -> do
+appEvent :: T.BrickEvent FocusTarget e -> AppEvent ()
+appEvent brickevent@(T.VtyEvent event) = do
+  focusTarget <- gets stateFocusTarget
+  case (focusTarget, event) of
+    (_, V.EvKey V.KEsc []) -> modify (\st -> st {stateFocusTarget = FocusMain})
+    (_, V.EvKey (V.KChar ':') []) -> modify (\st -> st {stateFocusTarget = FocusCmdline})
+    (FocusMain, V.EvKey (V.KChar 'q') []) -> M.halt
+    (FocusMain, V.EvKey (V.KChar 'l') []) -> openSelectedFile
+    (FocusMain, V.EvKey (V.KChar 'h') []) -> goBackToParentDir
+    (FocusMain, V.EvKey V.KEnter []) -> openSelectedFile
+    (FocusMain, V.EvKey V.KBS []) -> goBackToParentDir
+    (FocusMain, _) -> do
       files <- gets stateFiles
-      newFiles <- T.nestEventM' files (L.handleListEventVi L.handleListEvent ev)
+      newFiles <- T.nestEventM' files (L.handleListEventVi L.handleListEvent event)
       modify (\appState -> appState {stateFiles = newFiles})
+    (FocusCmdline, _) -> do
+      editor <- gets stateCmdlineEditor
+      newEditor <- T.nestEventM' editor (Editor.handleEditorEvent brickevent)
+      modify (\appState -> appState {stateCmdlineEditor = newEditor})
 appEvent _ = pure ()
 
-app :: M.App AppState e ()
+app :: M.App AppState e FocusTarget
 app =
   M.App
     { M.appDraw = appView,
@@ -112,7 +117,7 @@ loadDirInAppState dir parentDir appState = do
   files <- listFilesInDir dir
   pure $
     appState
-      { stateFiles = L.list () (Vec.fromList files) 1,
+      { stateFiles = L.list FocusMain (Vec.fromList files) 1,
         stateCwd = dir,
         stateParentDir = parentDir
       }
@@ -120,7 +125,10 @@ loadDirInAppState dir parentDir appState = do
 mkEmptyAppState :: AppState
 mkEmptyAppState =
   AppState
-    { stateFiles = L.list () (Vec.fromList []) 1,
+    { stateFiles = L.list FocusMain (Vec.fromList []) 1,
+      stateCmdlineEditor = Editor.editor FocusCmdline Nothing "",
+      stateFocusTarget = FocusMain,
+      -- stateFocusRing = focusRing [FocusMain, FocusCmdline],
       stateCwd = "",
       stateParentDir = ""
     }
