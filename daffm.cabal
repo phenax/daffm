@@ -1,0 +1,67 @@
+cabal-version:   3.0
+
+name:            daffm
+version:         0.1.0.0
+license:         MIT
+author:          Akshay Nair <phenax5@gmail.com>
+maintainer:      Akshay Nair <phenax5@gmail.com>
+build-type:      Simple
+synopsis:        Dumb as fuck file manager
+description:     Dumb as fuck file manager
+
+source-repository head
+  type:     git
+  location: https://github.com/makedaft/daffm.git
+
+common common-config
+  default-extensions:
+    RankNTypes
+    NamedFieldPuns
+    OverloadedStrings
+    QuasiQuotes
+    TemplateHaskell
+  default-language: Haskell2010
+  build-depends:
+    array,
+    base,
+    brick <= 2.9,
+    containers,
+    data-default <= 0.8.0.1,
+    directory <= 1.3.9.0,
+    mtl == 2.3.1,
+    temporary,
+    text,
+    vector,
+    vty
+
+common warnings
+  ghc-options:
+    -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
+    -Wunused-foralls -Wextra -Wno-unused-do-bind -Wname-shadowing
+    -fwarn-tabs -fprint-explicit-foralls -fprint-explicit-kinds
+    -threaded -rtsopts -with-rtsopts=-N
+
+executable daffm
+  import: common-config, warnings
+  hs-source-dirs: exe
+  main-is: Main.hs
+  build-depends: lib-daffm
+
+library lib-daffm
+  import: common-config, warnings
+  hs-source-dirs: lib
+  exposed-modules:
+    Daffm
+
+test-suite specs
+  import: common-config, warnings
+  type: exitcode-stdio-1.0
+  hs-source-dirs: specs
+  main-is: Main.hs
+  ghc-options: -Wno-name-shadowing
+  other-modules:
+    Specs.FooSpec
+  build-depends:
+    lib-daffm,
+    template-haskell,
+    hspec

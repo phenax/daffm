@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "./lib"
+      component: "lib:lib-daffm"
+
+    - path: "./exe/Main.hs"
+      component: "exe:daffm"
+
+    - path: "./specs"
+      component: "test:specs"
