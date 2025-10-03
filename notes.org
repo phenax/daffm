@@ -9,9 +9,9 @@
 - [X] select multiple files
 - [X] Command substitution %s:selections
 - [ ] Error handling
-- [ ] Cli arg parsing
 - [ ] Command parsing
 - [ ] pipe command: Pipe selections/current to stdin of command
+- [ ] Cli arg parsing
 ** Later
 - [ ] handle on open (for external integrations)
 - [ ] Cmdline history

@@ -63,12 +63,13 @@ cmdSubstitutions cmd = do
   (AppState {stateFiles, stateCwd, stateFileSelections}) <- get
   let file = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
   let escape = (\s -> "'" <> s <> "'") . Text.replace "'" "\\'"
-  let selections = Text.unwords . map (escape . Text.pack) $ Set.elems stateFileSelections
+  let selections = map Text.pack $ Set.elems stateFileSelections
   -- TODO: Escaping %
   let subst =
         Text.replace "%" (Text.pack file)
           . Text.replace "%d" (Text.pack stateCwd)
-          . Text.replace "%s" selections
+          . Text.replace "%s" (Text.unwords $ map escape selections)
+          . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
   pure . subst $ cmd
 
 applyCmdlineEdit :: (Zipper.TextZipper String -> Zipper.TextZipper String) -> AppEvent ()
