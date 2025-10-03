@@ -1,9 +1,9 @@
-module Daffm (app, loadDirInAppState, mkEmptyAppState) where
+module Daffm (app, loadDirToState, mkEmptyAppState) where
 
 import qualified Brick.Main as M
 import Daffm.Attrs (appAttrMap)
 import Daffm.Event (appEvent)
-import Daffm.State (loadDirInAppState, mkEmptyAppState)
+import Daffm.State (loadDirToState, mkEmptyAppState)
 import Daffm.Types (AppState (..), FocusTarget)
 import Daffm.View (appView)
 

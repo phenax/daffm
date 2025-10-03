@@ -6,20 +6,23 @@
 - [X] Command substitution %
 - [X] Command substitution %d:cwd
 - [X] Show file permissions
-- [ ] select multiple files
-- [ ] Commands
+- [X] select multiple files
+- [X] Command substitution %s:selections
 - [ ] Error handling
 - [ ] Cli arg parsing
+- [ ] Command parsing
+- [ ] pipe command: Pipe selections/current to stdin of command
 ** Later
 - [ ] handle on open (for external integrations)
 - [ ] Cmdline history
-- [ ] Command substitution %s:selections
 - [ ] cd into dir symlinks
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
+- [ ] Internal commands
 - [ ] configuration file (toml?)
 - [ ] support multikey bindings?
 - [ ] bind command: define keybindings
 - [ ] watch for changes
 - [ ] cmdline tab completion
+- [ ] Allow escaping % in commands

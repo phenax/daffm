@@ -3,7 +3,7 @@ module Daffm.State where
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
-import Control.Monad (forM)
+import Control.Monad (filterM, forM)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Char (toLower)
 import Data.List (findIndex, sortBy)
@@ -13,6 +13,7 @@ import qualified Data.Set as Set
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
+import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
 
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
@@ -37,8 +38,8 @@ toggleSetItem val set =
 toggleFileSelection :: FilePath -> AppState -> AppState
 toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
 
-loadDirInAppState :: FilePath -> FilePath -> AppState -> IO AppState
-loadDirInAppState dir parentDir appState@(AppState {stateCwd, stateListPositionCache}) = do
+loadDirToState :: FilePath -> FilePath -> AppState -> IO AppState
+loadDirToState dir parentDir appState@(AppState {stateCwd, stateListPositionCache}) = do
   setCurrentDirectory dir
   files <- listFilesInDir dir
   let prevDirPosM = findIndex ((== stateCwd) . filePath) files
@@ -97,3 +98,8 @@ cacheDirPosition appState@(AppState {stateListPositionCache, stateCwd, stateFile
     }
   where
     pos = fromMaybe 0 $ L.listSelected stateFiles
+
+filterInvalidSelections :: AppState -> IO AppState
+filterInvalidSelections st = do
+  selections <- filterM fileExist . Set.elems $ stateFileSelections st
+  pure $ st {stateFileSelections = Set.fromList selections}

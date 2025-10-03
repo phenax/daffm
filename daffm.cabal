@@ -18,6 +18,7 @@ common common-config
     RankNTypes
     NamedFieldPuns
     OverloadedStrings
+    LambdaCase
     QuasiQuotes
     MultiWayIf
     TemplateHaskell

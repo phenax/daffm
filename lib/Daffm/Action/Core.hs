@@ -1,12 +1,13 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use for_" #-}
+{-# HLINT ignore "Use <=<" #-}
 module Daffm.Action.Core where
 
 import Brick (suspendAndResume')
 import qualified Brick.Widgets.List as L
 import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, modify, put)
-import Daffm.State (loadDirInAppState, toggleFileSelection)
+import Daffm.State
 import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FileType (..))
 import qualified Data.Set as Set
 import System.Directory (getHomeDirectory)
@@ -16,32 +17,34 @@ import System.Process (callProcess)
 modifyM :: (MonadState s m) => (s -> m s) -> m ()
 modifyM f = get >>= f >>= put
 
+loadDir :: FilePath -> FilePath -> AppEvent ()
+loadDir dir parentDir = do
+  modifyM (liftIO . (>>= filterInvalidSelections) . loadDirToState dir parentDir)
+
 reloadDir :: AppEvent ()
 reloadDir = do
   AppState {stateCwd, stateParentDir} <- get
-  modifyM (liftIO . loadDirInAppState stateCwd stateParentDir)
+  loadDir stateCwd stateParentDir
 
 goBackToParentDir :: AppEvent ()
 goBackToParentDir = do
   dir <- gets stateParentDir
-  modifyM (liftIO . loadDirInAppState dir (takeDirectory dir))
+  loadDir dir (takeDirectory dir)
 
 goHome :: AppEvent ()
 goHome = do
   dir <- liftIO getHomeDirectory
-  modifyM (liftIO . loadDirInAppState dir (takeDirectory dir))
+  loadDir dir (takeDirectory dir)
 
 openSelectedFile :: AppEvent ()
 openSelectedFile = do
-  fileM <- currentFile
-  case fileM of
+  currentFile >>= \case
     Just file -> openFile file
     Nothing -> pure ()
 
 openFile :: FileInfo -> AppEvent ()
 openFile (FileInfo {filePath, fileType = Directory}) = do
-  (AppState {stateCwd}) <- get
-  modifyM (liftIO . loadDirInAppState filePath stateCwd)
+  gets stateCwd >>= loadDir filePath
 openFile (FileInfo {filePath, fileType}) = do
   suspendAndResume' $ do
     putStrLn $ "Opening " <> show fileType <> ": " <> filePath
@@ -53,8 +56,7 @@ currentFile = do
 
 toggleCurrentFileSelection :: AppEvent ()
 toggleCurrentFileSelection = do
-  fileM <- currentFile
-  case fileM of
+  currentFile >>= \case
     Just file -> modify $ toggleFileSelection (filePath file)
     Nothing -> pure ()
   moveCurrent 1
