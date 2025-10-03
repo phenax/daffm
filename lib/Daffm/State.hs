@@ -4,12 +4,12 @@ import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
 import Control.Monad (filterM, forM)
-import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
-import Data.Char (toLower)
+import Daffm.Types (AppState (..), FileInfo (..), FilePathText, FileType (..), FocusTarget (..))
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
+import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
@@ -35,12 +35,12 @@ toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a
 toggleSetItem val set =
   if val `Set.member` set then Set.delete val set else Set.insert val set
 
-toggleFileSelection :: FilePath -> AppState -> AppState
+toggleFileSelection :: FilePathText -> AppState -> AppState
 toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
 
-loadDirToState :: FilePath -> FilePath -> AppState -> IO AppState
+loadDirToState :: FilePathText -> FilePathText -> AppState -> IO AppState
 loadDirToState dir parentDir appState@(AppState {stateCwd, stateListPositionCache}) = do
-  setCurrentDirectory dir
+  setCurrentDirectory $ Text.unpack dir
   files <- listFilesInDir dir
   let prevDirPosM = findIndex ((== stateCwd) . filePath) files
   let cachedPosM = Map.lookup dir stateListPositionCache
@@ -65,13 +65,13 @@ fileTypeFromStatus s =
     | Posix.isSymbolicLink s -> SymbolicLink
     | otherwise -> UnknownFileType
 
-getFileInfo :: FilePath -> IO FileInfo
+getFileInfo :: FilePathText -> IO FileInfo
 getFileInfo name = do
-  path <- makeAbsolute name
+  path <- makeAbsolute $ Text.unpack name
   stat <- Posix.getSymbolicLinkStatus path
   pure $
     FileInfo
-      { filePath = path,
+      { filePath = Text.pack path,
         fileName = name,
         fileSize = Posix.fileSize stat,
         fileMode = Posix.fileMode stat,
@@ -80,16 +80,16 @@ getFileInfo name = do
 
 fileSorter :: FileInfo -> FileInfo -> Ordering
 fileSorter (FileInfo {fileType = Directory, fileName = fa}) (FileInfo {fileType = Directory, fileName = fb}) =
-  compare (toLower <$> fa) (toLower <$> fb)
+  compare (Text.toLower fa) (Text.toLower fb)
 fileSorter (FileInfo {fileType = Directory}) _ = LT
 fileSorter _ (FileInfo {fileType = Directory}) = GT
 fileSorter (FileInfo {fileName = fa}) (FileInfo {fileName = fb}) =
-  compare (toLower <$> fa) (toLower <$> fb)
+  compare (Text.toLower fa) (Text.toLower fb)
 
-listFilesInDir :: FilePath -> IO [FileInfo]
+listFilesInDir :: FilePathText -> IO [FileInfo]
 listFilesInDir dir = do
-  files <- listDirectory dir
-  sortBy fileSorter <$> forM files getFileInfo
+  files <- listDirectory (Text.unpack dir)
+  sortBy fileSorter <$> forM files (getFileInfo . Text.pack)
 
 cacheDirPosition :: AppState -> AppState
 cacheDirPosition appState@(AppState {stateListPositionCache, stateCwd, stateFiles}) =
@@ -101,5 +101,5 @@ cacheDirPosition appState@(AppState {stateListPositionCache, stateCwd, stateFile
 
 filterInvalidSelections :: AppState -> IO AppState
 filterInvalidSelections st = do
-  selections <- filterM fileExist . Set.elems $ stateFileSelections st
+  selections <- filterM (fileExist . Text.unpack) . Set.elems $ stateFileSelections st
   pure $ st {stateFileSelections = Set.fromList selections}

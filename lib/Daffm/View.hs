@@ -1,13 +1,14 @@
 module Daffm.View where
 
 import Brick.Types (Widget)
-import Brick.Widgets.Core (Padding (Max, Pad), hBox, hLimit, padLeft, padRight, str, vBox, vLimit, withAttr, (<+>))
+import Brick.Widgets.Core (Padding (Max, Pad), hBox, hLimit, padLeft, padRight, txt, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
 import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
 import qualified Data.Set as Set
+import qualified Data.Text as Text
 import qualified Data.Vector as Vec
 import System.Posix.Types (FileMode)
 import qualified System.PosixCompat as Posix
@@ -25,7 +26,7 @@ hFixed :: Int -> Widget n -> Widget n
 hFixed w = hLimit w . padRight Max
 
 headerView :: AppState -> Widget n
-headerView (AppState {stateCwd}) = str stateCwd
+headerView (AppState {stateCwd}) = txt stateCwd
 
 fileItemView :: AppState -> Bool -> FileInfo -> Widget FocusTarget
 fileItemView appState sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
@@ -37,12 +38,12 @@ fileItemView appState sel fileInfo@(FileInfo {filePath, fileSize, fileType, file
       fileNameView sel fileInfo
     ]
   where
-    fileSizeView = str . prettyFileSize . fromIntegral
-    fileTypeView = str . showFileType
-    fileModeView = str . showFileMode
-    fileSelectionView = str $ if Set.member filePath $ stateFileSelections appState then ">" else " "
+    fileSizeView = txt . prettyFileSize . fromIntegral
+    fileTypeView = txt . showFileType
+    fileModeView = txt . showFileMode
+    fileSelectionView = txt $ if Set.member filePath $ stateFileSelections appState then ">" else " "
 
-showFileType :: FileType -> String
+showFileType :: FileType -> Text.Text
 showFileType Directory = "dir"
 showFileType SymbolicLink = "link"
 showFileType UnixSocket = "sock"
@@ -52,48 +53,49 @@ showFileType BlockDevice = "bdev"
 showFileType RegularFile = "file"
 showFileType UnknownFileType = "?"
 
-showFileMode :: FileMode -> String
+showFileMode :: FileMode -> Text.Text
 showFileMode mode = permchars
   where
     perm m c = if Posix.intersectFileModes mode m == m then c else '-'
     permchars =
-      [ perm Posix.ownerReadMode 'r',
-        perm Posix.ownerWriteMode 'w',
-        perm Posix.ownerExecuteMode 'x',
-        perm Posix.groupReadMode 'r',
-        perm Posix.groupWriteMode 'w',
-        perm Posix.groupExecuteMode 'x',
-        perm Posix.otherReadMode 'r',
-        perm Posix.otherWriteMode 'w',
-        perm Posix.otherExecuteMode 'x'
-      ]
+      Text.pack
+        [ perm Posix.ownerReadMode 'r',
+          perm Posix.ownerWriteMode 'w',
+          perm Posix.ownerExecuteMode 'x',
+          perm Posix.groupReadMode 'r',
+          perm Posix.groupWriteMode 'w',
+          perm Posix.groupExecuteMode 'x',
+          perm Posix.otherReadMode 'r',
+          perm Posix.otherWriteMode 'w',
+          perm Posix.otherExecuteMode 'x'
+        ]
 
 fileNameView :: Bool -> FileInfo -> Widget FocusTarget
-fileNameView True (FileInfo {fileName, fileType = Directory}) = withAttr directorySelectedAttr $ str $ fileName <> "/"
-fileNameView False (FileInfo {fileName, fileType = Directory}) = withAttr directoryAttr $ str $ fileName <> "/"
-fileNameView True (FileInfo {fileName}) = withAttr fileSelectedAttr $ str fileName
-fileNameView False (FileInfo {fileName}) = withAttr fileAttr $ str fileName
+fileNameView True (FileInfo {fileName, fileType = Directory}) = withAttr directorySelectedAttr $ txt $ fileName <> "/"
+fileNameView False (FileInfo {fileName, fileType = Directory}) = withAttr directoryAttr $ txt $ fileName <> "/"
+fileNameView True (FileInfo {fileName}) = withAttr fileSelectedAttr $ txt fileName
+fileNameView False (FileInfo {fileName}) = withAttr fileAttr $ txt fileName
 
 cmdlineView :: AppState -> Widget FocusTarget
 cmdlineView (AppState {stateFocusTarget = FocusCmdline, stateCmdlineEditor}) =
-  str ":" <+> renderEditor (str . unlines) True stateCmdlineEditor
+  txt ":" <+> renderEditor (txt . Text.unlines) True stateCmdlineEditor
 cmdlineView (AppState {stateFiles}) =
-  hBox [str ":", padLeft Max $ padRight (Pad 1) posIndicator]
+  hBox [txt ":", padLeft Max $ padRight (Pad 1) posIndicator]
   where
-    posIndicator = str $ cur <> "/" <> total
+    posIndicator = txt $ cur <> "/" <> total
     cur = case L.listSelected stateFiles of
       Nothing -> "-"
-      Just n -> show (n + 1)
-    total = show $ Vec.length $ L.listElements stateFiles
+      Just n -> Text.pack $ show (n + 1)
+    total = Text.pack $ show $ Vec.length $ L.listElements stateFiles
 
-prettyFileSize :: Int64 -> String
+prettyFileSize :: Int64 -> Text.Text
 prettyFileSize i
   | i >= 2 ^ (40 :: Int64) = format (i `divBy` (2 ** 40)) <> "T"
   | i >= 2 ^ (30 :: Int64) = format (i `divBy` (2 ** 30)) <> "G"
   | i >= 2 ^ (20 :: Int64) = format (i `divBy` (2 ** 20)) <> "M"
   | i >= 2 ^ (10 :: Int64) = format (i `divBy` (2 ** 10)) <> "K"
-  | otherwise = show i
+  | otherwise = Text.pack $ show i
   where
-    format = printf "%0.1f"
+    format = Text.pack . printf "%0.1f"
     divBy :: Int64 -> Double -> Double
     divBy a b = (fromIntegral a :: Double) / b

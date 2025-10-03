@@ -8,7 +8,6 @@ import Control.Monad.State (get, gets, modify)
 import Daffm.Action.Core (reloadDir)
 import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FocusTarget (..))
 import Data.Char (isSpace)
-import Data.List (dropWhileEnd)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper as Z
@@ -21,9 +20,9 @@ leaveCmdline = clearCmdline >> modify (\st -> st {stateFocusTarget = FocusMain})
 enterCmdline :: AppEvent ()
 enterCmdline = modify (\st -> st {stateFocusTarget = FocusCmdline})
 
-setCmdlineText :: String -> AppEvent ()
+setCmdlineText :: Text.Text -> AppEvent ()
 setCmdlineText text =
-  applyCmdlineEdit (const $ Z.stringZipper [text] (Just 1))
+  applyCmdlineEdit (const $ Z.textZipper [text] (Just 1))
 
 clearCmdline :: AppEvent ()
 clearCmdline = applyCmdlineEdit Z.clearZipper
@@ -34,17 +33,17 @@ runCmdline = do
   evaluateCommand cmd
   leaveCmdline
   where
-    trimCmd = dropWhile isSpace . dropWhileEnd isSpace . unlines
+    trimCmd = Text.dropWhile isSpace . Text.dropWhileEnd isSpace . Text.unlines
 
-evaluateCommand :: String -> AppEvent ()
-evaluateCommand ('!' : '!' : cmd) = do
-  cmd' <- Text.unpack <$> cmdSubstitutions (Text.pack cmd)
+evaluateCommand :: Text.Text -> AppEvent ()
+evaluateCommand (Text.splitAt 2 -> ("!!", cmd)) = do
+  cmd' <- Text.unpack <$> cmdSubstitutions cmd
   suspendAndResume' $ do
     callCommand cmd'
     putStrLn "Press any key to continue" >> void getChar
   reloadDir
-evaluateCommand ('!' : cmd) = do
-  cmd' <- Text.unpack <$> cmdSubstitutions (Text.pack cmd)
+evaluateCommand (Text.splitAt 1 -> ("!", cmd)) = do
+  cmd' <- Text.unpack <$> cmdSubstitutions cmd
   suspendAndResume' $ callCommand cmd'
   reloadDir
 evaluateCommand "delete" = do
@@ -54,7 +53,7 @@ evaluateCommand "delete" = do
           then maybe [] ((: []) . filePath . snd) $ L.listSelectedElement stateFiles
           else Set.elems stateFileSelections
   unless (null files) $ do
-    suspendAndResume' $ callProcess "rm" ("-rfi" : files)
+    suspendAndResume' $ callProcess "rm" ("-rfi" : map Text.unpack files)
   reloadDir
 evaluateCommand _cmd = pure ()
 
@@ -63,16 +62,16 @@ cmdSubstitutions cmd = do
   (AppState {stateFiles, stateCwd, stateFileSelections}) <- get
   let file = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
   let escape = (\s -> "'" <> s <> "'") . Text.replace "'" "\\'"
-  let selections = map Text.pack $ Set.elems stateFileSelections
+  let selections = Set.elems stateFileSelections
   -- TODO: Escaping %
   let subst =
-        Text.replace "%" (Text.pack file)
-          . Text.replace "%d" (Text.pack stateCwd)
+        Text.replace "%" file
+          . Text.replace "%d" stateCwd
           . Text.replace "%s" (Text.unwords $ map escape selections)
           . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
   pure . subst $ cmd
 
-applyCmdlineEdit :: (Zipper.TextZipper String -> Zipper.TextZipper String) -> AppEvent ()
+applyCmdlineEdit :: (Zipper.TextZipper Text.Text -> Zipper.TextZipper Text.Text) -> AppEvent ()
 applyCmdlineEdit zipper = do
   editor <- gets stateCmdlineEditor
   let editor' = Editor.applyEdit zipper editor

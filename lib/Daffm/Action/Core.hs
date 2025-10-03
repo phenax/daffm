@@ -8,8 +8,9 @@ import Brick (suspendAndResume')
 import qualified Brick.Widgets.List as L
 import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, modify, put)
 import Daffm.State
-import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FileType (..))
+import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FilePathText, FileType (..))
 import qualified Data.Set as Set
+import qualified Data.Text as Text
 import System.Directory (getHomeDirectory)
 import System.FilePath (takeDirectory)
 import System.Process (callProcess)
@@ -17,7 +18,7 @@ import System.Process (callProcess)
 modifyM :: (MonadState s m) => (s -> m s) -> m ()
 modifyM f = get >>= f >>= put
 
-loadDir :: FilePath -> FilePath -> AppEvent ()
+loadDir :: FilePathText -> FilePathText -> AppEvent ()
 loadDir dir parentDir = do
   modifyM (liftIO . (>>= filterInvalidSelections) . loadDirToState dir parentDir)
 
@@ -29,12 +30,12 @@ reloadDir = do
 goBackToParentDir :: AppEvent ()
 goBackToParentDir = do
   dir <- gets stateParentDir
-  loadDir dir (takeDirectory dir)
+  loadDir dir (Text.pack . takeDirectory $ Text.unpack dir)
 
 goHome :: AppEvent ()
 goHome = do
   dir <- liftIO getHomeDirectory
-  loadDir dir (takeDirectory dir)
+  loadDir (Text.pack dir) (Text.pack $ takeDirectory dir)
 
 openSelectedFile :: AppEvent ()
 openSelectedFile = do
@@ -47,8 +48,8 @@ openFile (FileInfo {filePath, fileType = Directory}) = do
   gets stateCwd >>= loadDir filePath
 openFile (FileInfo {filePath, fileType}) = do
   suspendAndResume' $ do
-    putStrLn $ "Opening " <> show fileType <> ": " <> filePath
-    callProcess "nvim" [filePath]
+    putStrLn $ "Opening " <> show fileType <> ": " <> Text.unpack filePath
+    callProcess "nvim" [Text.unpack filePath]
 
 currentFile :: AppEvent (Maybe FileInfo)
 currentFile = do

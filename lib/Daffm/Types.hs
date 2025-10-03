@@ -5,6 +5,7 @@ import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.Text as Text
 import System.Posix.Types (FileMode, FileOffset)
 
 data FileType
@@ -18,9 +19,11 @@ data FileType
   | UnknownFileType
   deriving (Show)
 
+type FilePathText = Text.Text
+
 data FileInfo = FileInfo
-  { fileName :: String,
-    filePath :: FilePath,
+  { fileName :: Text.Text,
+    filePath :: FilePathText,
     fileSize :: FileOffset,
     fileMode :: FileMode,
     fileType :: FileType
@@ -32,14 +35,14 @@ data FocusTarget = FocusCmdline | FocusMain deriving (Show, Eq, Ord)
 data AppState = AppState
   { stateFiles :: L.List FocusTarget FileInfo,
     stateCmdlineEditor :: CmdlineEditor,
-    stateFileSelections :: Set.Set FilePath,
+    stateFileSelections :: Set.Set FilePathText,
     stateFocusTarget :: FocusTarget,
-    stateCwd :: FilePath,
-    stateListPositionCache :: Map.Map String Int,
-    stateParentDir :: FilePath
+    stateCwd :: FilePathText,
+    stateListPositionCache :: Map.Map Text.Text Int,
+    stateParentDir :: FilePathText
   }
   deriving (Show)
 
 type AppEvent = EventM FocusTarget AppState
 
-type CmdlineEditor = Editor.Editor String FocusTarget
+type CmdlineEditor = Editor.Editor Text.Text FocusTarget
