@@ -6,13 +6,13 @@
 - [X] Command substitution %
 - [X] Command substitution %d:cwd
 - [X] Show file permissions
+- [ ] select multiple files
 - [ ] Commands
 - [ ] Error handling
 - [ ] Cli arg parsing
 ** Later
 - [ ] handle on open (for external integrations)
 - [ ] Cmdline history
-- [ ] select multiple files
 - [ ] Command substitution %s:selections
 - [ ] cd into dir symlinks
 - [ ] copy/paste across instances

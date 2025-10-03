@@ -5,10 +5,11 @@ module Daffm.Action.Core where
 
 import Brick (suspendAndResume')
 import qualified Brick.Widgets.List as L
-import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, put)
-import Daffm.State (loadDirInAppState)
+import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, modify, put)
+import Daffm.State (loadDirInAppState, toggleFileSelection)
 import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FileType (..))
-import Data.Vector ((!?))
+import qualified Data.Set as Set
+import System.Directory (getHomeDirectory)
 import System.FilePath (takeDirectory)
 import System.Process (callProcess)
 
@@ -25,21 +26,44 @@ goBackToParentDir = do
   dir <- gets stateParentDir
   modifyM (liftIO . loadDirInAppState dir (takeDirectory dir))
 
+goHome :: AppEvent ()
+goHome = do
+  dir <- liftIO getHomeDirectory
+  modifyM (liftIO . loadDirInAppState dir (takeDirectory dir))
+
 openSelectedFile :: AppEvent ()
 openSelectedFile = do
-  appState <- get
-  let indexM = L.listSelected $ stateFiles appState
-  let files = L.listElements $ stateFiles appState
-  case indexM >>= (files !?) of
-    Just file -> openFile appState file
+  fileM <- currentFile
+  case fileM of
+    Just file -> openFile file
     Nothing -> pure ()
-  pure ()
 
-openFile :: AppState -> FileInfo -> AppEvent ()
-openFile appState (FileInfo {filePath, fileType = Directory}) = do
-  modifyM (liftIO . loadDirInAppState filePath (stateCwd appState))
-openFile _appState (FileInfo {filePath, fileType}) = do
+openFile :: FileInfo -> AppEvent ()
+openFile (FileInfo {filePath, fileType = Directory}) = do
+  (AppState {stateCwd}) <- get
+  modifyM (liftIO . loadDirInAppState filePath stateCwd)
+openFile (FileInfo {filePath, fileType}) = do
   suspendAndResume' $ do
     putStrLn $ "Opening " <> show fileType <> ": " <> filePath
     callProcess "nvim" [filePath]
-  pure ()
+
+currentFile :: AppEvent (Maybe FileInfo)
+currentFile = do
+  gets (fmap snd . L.listSelectedElement . stateFiles)
+
+toggleCurrentFileSelection :: AppEvent ()
+toggleCurrentFileSelection = do
+  fileM <- currentFile
+  case fileM of
+    Just file -> modify $ toggleFileSelection (filePath file)
+    Nothing -> pure ()
+  moveCurrent 1
+
+clearFileSelections :: AppEvent ()
+clearFileSelections =
+  modify $ \s -> s {stateFileSelections = Set.empty}
+
+moveCurrent :: Int -> AppEvent ()
+moveCurrent count = do
+  files <- gets stateFiles
+  modify $ \s -> s {stateFiles = L.listMoveBy count files}

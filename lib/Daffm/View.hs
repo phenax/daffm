@@ -7,6 +7,7 @@ import qualified Brick.Widgets.List as L
 import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
+import qualified Data.Set as Set
 import qualified Data.Vector as Vec
 import System.Posix.Types (FileMode)
 import qualified System.PosixCompat as Posix
@@ -18,7 +19,7 @@ appView appState@(AppState {stateFiles}) = [ui]
     ui = vBox [vLimit 1 header, box, vLimit 1 cmdline]
     header = headerView appState
     cmdline = cmdlineView appState
-    box = L.renderList fileItemView True stateFiles
+    box = L.renderList (fileItemView appState) True stateFiles
 
 hFixed :: Int -> Widget n -> Widget n
 hFixed w = hLimit w . padRight Max
@@ -26,10 +27,11 @@ hFixed w = hLimit w . padRight Max
 headerView :: AppState -> Widget n
 headerView (AppState {stateCwd}) = str stateCwd
 
-fileItemView :: Bool -> FileInfo -> Widget FocusTarget
-fileItemView sel fileInfo@(FileInfo {fileSize, fileType, fileMode}) =
+fileItemView :: AppState -> Bool -> FileInfo -> Widget FocusTarget
+fileItemView appState sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
   hBox
-    [ hFixed 10 $ fileModeView fileMode,
+    [ hFixed 2 fileSelectionView,
+      hFixed 10 $ fileModeView fileMode,
       hFixed 6 $ fileTypeView fileType,
       hFixed 7 $ fileSizeView fileSize,
       fileNameView sel fileInfo
@@ -38,6 +40,7 @@ fileItemView sel fileInfo@(FileInfo {fileSize, fileType, fileMode}) =
     fileSizeView = str . prettyFileSize . fromIntegral
     fileTypeView = str . showFileType
     fileModeView = str . showFileMode
+    fileSelectionView = str $ if Set.member filePath $ stateFileSelections appState then ">" else " "
 
 showFileType :: FileType -> String
 showFileType Directory = "dir"

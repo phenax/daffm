@@ -9,6 +9,7 @@ import Data.Char (toLower)
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
@@ -24,9 +25,17 @@ mkEmptyAppState =
       stateCmdlineEditor = mkEditor "",
       stateFocusTarget = FocusMain,
       stateListPositionCache = Map.empty,
+      stateFileSelections = Set.empty,
       stateCwd = "",
       stateParentDir = ""
     }
+
+toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a
+toggleSetItem val set =
+  if val `Set.member` set then Set.delete val set else Set.insert val set
+
+toggleFileSelection :: FilePath -> AppState -> AppState
+toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
 
 loadDirInAppState :: FilePath -> FilePath -> AppState -> IO AppState
 loadDirInAppState dir parentDir appState@(AppState {stateCwd, stateListPositionCache}) = do
