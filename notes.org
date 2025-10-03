@@ -5,7 +5,7 @@
 - [X] Run shell command
 - [X] Command substitution %
 - [X] Command substitution %d:cwd
-- [ ] Show file permissions
+- [X] Show file permissions
 - [ ] Commands
 - [ ] Error handling
 - [ ] Cli arg parsing

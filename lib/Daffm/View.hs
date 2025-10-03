@@ -8,6 +8,8 @@ import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelected
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
 import qualified Data.Vector as Vec
+import System.Posix.Types (FileMode)
+import qualified System.PosixCompat as Posix
 import Text.Printf (printf)
 
 appView :: AppState -> [Widget FocusTarget]
@@ -25,15 +27,17 @@ headerView :: AppState -> Widget n
 headerView (AppState {stateCwd}) = str stateCwd
 
 fileItemView :: Bool -> FileInfo -> Widget FocusTarget
-fileItemView sel fileInfo@(FileInfo {fileSize, fileType}) =
+fileItemView sel fileInfo@(FileInfo {fileSize, fileType, fileMode}) =
   hBox
-    [ hFixed 6 (fileTypeView fileType),
-      hFixed 7 (fileSizeView fileSize),
+    [ hFixed 10 $ fileModeView fileMode,
+      hFixed 6 $ fileTypeView fileType,
+      hFixed 7 $ fileSizeView fileSize,
       fileNameView sel fileInfo
     ]
   where
     fileSizeView = str . prettyFileSize . fromIntegral
     fileTypeView = str . showFileType
+    fileModeView = str . showFileMode
     showFileType Directory = "dir"
     showFileType SymbolicLink = "link"
     showFileType UnixSocket = "sock"
@@ -42,6 +46,22 @@ fileItemView sel fileInfo@(FileInfo {fileSize, fileType}) =
     showFileType BlockDevice = "bdev"
     showFileType RegularFile = "file"
     showFileType UnknownFileType = "?"
+
+showFileMode :: FileMode -> String
+showFileMode mode = permchars
+  where
+    perm m c = if Posix.intersectFileModes mode m == m then c else '-'
+    permchars =
+      [ perm Posix.ownerReadMode 'r',
+        perm Posix.ownerWriteMode 'w',
+        perm Posix.ownerExecuteMode 'x',
+        perm Posix.groupReadMode 'r',
+        perm Posix.groupWriteMode 'w',
+        perm Posix.groupExecuteMode 'x',
+        perm Posix.otherReadMode 'r',
+        perm Posix.otherWriteMode 'w',
+        perm Posix.otherExecuteMode 'x'
+      ]
 
 fileNameView :: Bool -> FileInfo -> Widget FocusTarget
 fileNameView True (FileInfo {fileName, fileType = Directory}) = withAttr directorySelectedAttr $ str $ fileName <> "/"
