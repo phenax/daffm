@@ -2,6 +2,7 @@ module Daffm.Types where
 
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
+import qualified Data.Map as Map
 import System.Posix.Types (FileOffset)
 
 data FileType
@@ -12,6 +13,7 @@ data FileType
   | Directory
   | SymbolicLink
   | UnixSocket
+  | UnknownFileType
   deriving (Show)
 
 data FileInfo = FileInfo
@@ -28,8 +30,8 @@ data AppState = AppState
   { stateFiles :: L.List FocusTarget FileInfo,
     stateCmdlineEditor :: Editor.Editor String FocusTarget,
     stateFocusTarget :: FocusTarget,
-    -- stateFocusRing :: FocusRing FocusTarget,
     stateCwd :: FilePath,
+    stateListPositionCache :: Map.Map String Int,
     stateParentDir :: FilePath
   }
   deriving (Show)

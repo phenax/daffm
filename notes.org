@@ -1,16 +1,18 @@
 ** Current
-- [ ] Show file permissions
-- [ ] Preserve cursor position per dir while navigating
+- [X] Preserve cursor position per dir while navigating
 - [ ] Cmdline must be single line
 - [ ] Commands
 - [ ] Run shell command
 - [ ] Command substitutions (%:filehighlighted %d:cwd %s:selections)
+- [ ] Show file permissions
 ** Later
 - [ ] handle on open (for external integrations)
 - [ ] Cmdline history
 - [ ] bind command: define keybindings
+- [ ] select multiple files
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
 - [ ] support multikey bindings?
 - [ ] configuration file (toml?)
+- [ ] watch for changes

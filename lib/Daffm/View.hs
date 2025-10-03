@@ -1,7 +1,7 @@
 module Daffm.View where
 
 import Brick.Types (Widget)
-import Brick.Widgets.Core (Padding (Max, Pad), TextWidth (textWidth), hBox, hLimit, padLeft, padRight, str, vBox, vLimit, withAttr, (<+>))
+import Brick.Widgets.Core (Padding (Max, Pad), hBox, hLimit, padLeft, padRight, str, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
 import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr)
@@ -20,14 +20,14 @@ appView appState@(AppState {stateFiles, stateCwd}) = [ui]
     box :: Widget FocusTarget
     box = L.renderList fileItemView True stateFiles
 
-fixedColumnsStr :: Int -> Widget n -> Widget n
-fixedColumnsStr w s = hLimit w $ padRight Max s
+hFixed :: Int -> Widget n -> Widget n
+hFixed w = hLimit w . padRight Max
 
 fileItemView :: Bool -> FileInfo -> Widget FocusTarget
 fileItemView sel fileInfo@(FileInfo {fileSize, fileType}) =
   hBox
-    [ fixedColumnsStr 5 (fileTypeView fileType),
-      fixedColumnsStr 7 (fileSizeView fileSize),
+    [ hFixed 5 (fileTypeView fileType),
+      hFixed 7 (fileSizeView fileSize),
       fileNameView sel fileInfo
     ]
   where
@@ -40,6 +40,7 @@ fileItemView sel fileInfo@(FileInfo {fileSize, fileType}) =
     showFileType CharacterDevice = "cdev"
     showFileType BlockDevice = "bdev"
     showFileType RegularFile = "file"
+    showFileType UnknownFileType = "?"
 
 fileNameView :: Bool -> FileInfo -> Widget FocusTarget
 fileNameView True (FileInfo {fileName, fileType = Directory}) = withAttr directorySelectedAttr $ str $ fileName <> "/"
