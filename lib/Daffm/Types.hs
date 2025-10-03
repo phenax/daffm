@@ -1,5 +1,6 @@
 module Daffm.Types where
 
+import Brick (EventM)
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import qualified Data.Map as Map
@@ -35,3 +36,5 @@ data AppState = AppState
     stateParentDir :: FilePath
   }
   deriving (Show)
+
+type AppEvent = EventM FocusTarget AppState
