@@ -63,6 +63,8 @@ library lib-daffm
     Daffm.Attrs
     Daffm.Event
     Daffm.State
+    Daffm.Action.Core
+    Daffm.Action.Cmdline
 
 test-suite specs
   import: common-config, warnings

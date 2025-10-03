@@ -38,14 +38,16 @@ fileItemView sel fileInfo@(FileInfo {fileSize, fileType, fileMode}) =
     fileSizeView = str . prettyFileSize . fromIntegral
     fileTypeView = str . showFileType
     fileModeView = str . showFileMode
-    showFileType Directory = "dir"
-    showFileType SymbolicLink = "link"
-    showFileType UnixSocket = "sock"
-    showFileType NamedPipe = "pipe"
-    showFileType CharacterDevice = "cdev"
-    showFileType BlockDevice = "bdev"
-    showFileType RegularFile = "file"
-    showFileType UnknownFileType = "?"
+
+showFileType :: FileType -> String
+showFileType Directory = "dir"
+showFileType SymbolicLink = "link"
+showFileType UnixSocket = "sock"
+showFileType NamedPipe = "pipe"
+showFileType CharacterDevice = "cdev"
+showFileType BlockDevice = "bdev"
+showFileType RegularFile = "file"
+showFileType UnknownFileType = "?"
 
 showFileMode :: FileMode -> String
 showFileMode mode = permchars
