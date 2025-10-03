@@ -9,15 +9,19 @@ import Data.Char (toLower)
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
+import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
 import qualified System.PosixCompat as Posix
+
+mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
+mkEditor = Editor.editor FocusCmdline (Just 1)
 
 mkEmptyAppState :: AppState
 mkEmptyAppState =
   AppState
     { stateFiles = L.list FocusMain (Vec.fromList []) 1,
-      stateCmdlineEditor = Editor.editor FocusCmdline (Just 1) "",
+      stateCmdlineEditor = mkEditor "",
       stateFocusTarget = FocusMain,
       stateListPositionCache = Map.empty,
       stateCwd = "",
@@ -60,6 +64,7 @@ getFileInfo name = do
       { filePath = path,
         fileName = name,
         fileSize = Posix.fileSize stat,
+        fileMode = Posix.fileMode stat,
         fileType = fileTypeFromStatus stat
       }
 

@@ -4,7 +4,7 @@ import Brick (EventM)
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import qualified Data.Map as Map
-import System.Posix.Types (FileOffset)
+import System.Posix.Types (FileMode, FileOffset)
 
 data FileType
   = RegularFile
@@ -21,6 +21,7 @@ data FileInfo = FileInfo
   { fileName :: String,
     filePath :: FilePath,
     fileSize :: FileOffset,
+    fileMode :: FileMode,
     fileType :: FileType
   }
   deriving (Show)
@@ -29,7 +30,7 @@ data FocusTarget = FocusCmdline | FocusMain deriving (Show, Eq, Ord)
 
 data AppState = AppState
   { stateFiles :: L.List FocusTarget FileInfo,
-    stateCmdlineEditor :: Editor.Editor String FocusTarget,
+    stateCmdlineEditor :: CmdlineEditor,
     stateFocusTarget :: FocusTarget,
     stateCwd :: FilePath,
     stateListPositionCache :: Map.Map String Int,
@@ -38,3 +39,5 @@ data AppState = AppState
   deriving (Show)
 
 type AppEvent = EventM FocusTarget AppState
+
+type CmdlineEditor = Editor.Editor String FocusTarget

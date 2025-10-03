@@ -5,14 +5,15 @@ import qualified Brick.Main as M
 import qualified Brick.Types as T
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
+import Control.Monad (void)
 import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, modify, put)
 import Daffm.State (cacheDirPosition, loadDirInAppState)
 import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Char (isSpace)
 import Data.List (dropWhileEnd)
 import qualified Data.Text as Text
-import Data.Text.Array (run)
 import qualified Data.Text.Zipper as Z
+import qualified Data.Text.Zipper as Zipper
 import Data.Vector ((!?))
 import qualified Graphics.Vty as V
 import System.FilePath (takeDirectory)
@@ -30,8 +31,11 @@ appEvent brickevent@(T.VtyEvent event) = do
     (FocusMain, V.EvKey V.KEnter []) -> openSelectedFile
     (FocusMain, V.EvKey V.KBS []) -> goBackToParentDir
     (FocusMain, V.EvKey (V.KChar ':') []) -> enterCmdline
+    (FocusMain, V.EvKey (V.KChar '!') []) -> setCmdlineText "!" >> enterCmdline
     (FocusMain, V.EvKey (V.KChar 'q') []) -> M.halt
     (FocusMain, V.EvKey (V.KChar 'r') [V.MCtrl]) -> reloadDir
+    -- Just for testing
+    (FocusMain, V.EvKey (V.KChar 'p') [V.MCtrl]) -> evaluateCommand "!!chafa -f kitty %"
     (FocusCmdline, V.EvKey V.KEsc []) -> leaveCmdline
     (FocusCmdline, V.EvKey V.KEnter []) -> runCmdline
     (FocusMain, _) -> do
@@ -46,19 +50,26 @@ appEvent brickevent@(T.VtyEvent event) = do
 appEvent _ = pure ()
 
 leaveCmdline :: AppEvent ()
-leaveCmdline = clearEditor >> modify (\st -> st {stateFocusTarget = FocusMain})
+leaveCmdline = clearCmdline >> modify (\st -> st {stateFocusTarget = FocusMain})
 
 enterCmdline :: AppEvent ()
 enterCmdline = modify (\st -> st {stateFocusTarget = FocusCmdline})
 
+setCmdlineText :: String -> AppEvent ()
+setCmdlineText text =
+  applyCmdlineEdit (const $ Z.stringZipper [text] (Just 1))
+
+clearCmdline :: AppEvent ()
+clearCmdline = applyCmdlineEdit Z.clearZipper
+
 cmdSubstitutions :: Text.Text -> AppEvent Text.Text
 cmdSubstitutions cmd = do
-  appState <- get
-  let file = maybe "" (filePath . snd) . L.listSelectedElement . stateFiles $ appState
+  (AppState {stateFiles, stateCwd}) <- get
+  let file = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
   -- TODO: Escaping %
   let subst =
         Text.replace "%" (Text.pack file)
-          . Text.replace "%d" (Text.pack $ stateCwd appState)
+          . Text.replace "%d" (Text.pack stateCwd)
   pure . subst $ cmd
 
 runCmdline :: AppEvent ()
@@ -70,22 +81,29 @@ runCmdline = do
     trimCmd = dropWhile isSpace . dropWhileEnd isSpace . unlines
 
 evaluateCommand :: String -> AppEvent ()
+evaluateCommand ('!' : '!' : cmd) = do
+  cmd' <- Text.unpack <$> cmdSubstitutions (Text.pack cmd)
+  suspendAndResume' $ do
+    callCommand cmd'
+    putStrLn "Press any key to continue"
+    void getChar
+  reloadDir
 evaluateCommand ('!' : cmd) = do
   cmd' <- Text.unpack <$> cmdSubstitutions (Text.pack cmd)
   suspendAndResume' $ callCommand cmd'
   reloadDir
 evaluateCommand _cmd = pure ()
 
-clearEditor :: AppEvent ()
-clearEditor = do
-  editor <- gets stateCmdlineEditor
-  let editor' = Editor.applyEdit Z.clearZipper editor
-  modify (\s -> s {stateCmdlineEditor = editor'})
-
 reloadDir :: AppEvent ()
 reloadDir = do
   AppState {stateParentDir, stateCwd} <- get
   modifyM (liftIO . loadDirInAppState stateCwd stateParentDir)
+
+applyCmdlineEdit :: (Zipper.TextZipper String -> Zipper.TextZipper String) -> AppEvent ()
+applyCmdlineEdit zipper = do
+  editor <- gets stateCmdlineEditor
+  let editor' = Editor.applyEdit zipper editor
+  modify (\s -> s {stateCmdlineEditor = editor'})
 
 openSelectedFile :: AppEvent ()
 openSelectedFile = do

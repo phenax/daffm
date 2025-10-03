@@ -2,23 +2,24 @@
 - [X] Preserve cursor position per dir while navigating
 - [X] Cmdline must be single line
 - [X] Reload
-- [ ] Commands
 - [X] Run shell command
 - [X] Command substitution %
 - [X] Command substitution %d:cwd
 - [ ] Show file permissions
+- [ ] Commands
 - [ ] Error handling
+- [ ] Cli arg parsing
 ** Later
 - [ ] handle on open (for external integrations)
 - [ ] Cmdline history
-- [ ] bind command: define keybindings
 - [ ] select multiple files
 - [ ] Command substitution %s:selections
 - [ ] cd into dir symlinks
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
-- [ ] support multikey bindings?
 - [ ] configuration file (toml?)
+- [ ] support multikey bindings?
+- [ ] bind command: define keybindings
 - [ ] watch for changes
 - [ ] cmdline tab completion

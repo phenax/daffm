@@ -11,22 +11,23 @@ import qualified Data.Vector as Vec
 import Text.Printf (printf)
 
 appView :: AppState -> [Widget FocusTarget]
-appView appState@(AppState {stateFiles, stateCwd}) = [ui]
+appView appState@(AppState {stateFiles}) = [ui]
   where
-    ui :: Widget FocusTarget
     ui = vBox [vLimit 1 header, box, vLimit 1 cmdline]
-    header = str stateCwd
+    header = headerView appState
     cmdline = cmdlineView appState
-    box :: Widget FocusTarget
     box = L.renderList fileItemView True stateFiles
 
 hFixed :: Int -> Widget n -> Widget n
 hFixed w = hLimit w . padRight Max
 
+headerView :: AppState -> Widget n
+headerView (AppState {stateCwd}) = str stateCwd
+
 fileItemView :: Bool -> FileInfo -> Widget FocusTarget
 fileItemView sel fileInfo@(FileInfo {fileSize, fileType}) =
   hBox
-    [ hFixed 5 (fileTypeView fileType),
+    [ hFixed 6 (fileTypeView fileType),
       hFixed 7 (fileSizeView fileSize),
       fileNameView sel fileInfo
     ]
