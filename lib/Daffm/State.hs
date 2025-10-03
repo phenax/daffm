@@ -17,7 +17,7 @@ mkEmptyAppState :: AppState
 mkEmptyAppState =
   AppState
     { stateFiles = L.list FocusMain (Vec.fromList []) 1,
-      stateCmdlineEditor = Editor.editor FocusCmdline Nothing "",
+      stateCmdlineEditor = Editor.editor FocusCmdline (Just 1) "",
       stateFocusTarget = FocusMain,
       stateListPositionCache = Map.empty,
       stateCwd = "",
