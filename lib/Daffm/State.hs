@@ -4,7 +4,7 @@ import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
 import Control.Monad (filterM, forM)
-import Daffm.Types (AppState (..), Command (..), FileInfo (..), FilePathText, FileType (..), FocusTarget (..))
+import Daffm.Types
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -20,8 +20,8 @@ import qualified System.PosixCompat as Posix
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
 mkEditor = Editor.editor FocusCmdline (Just 1)
 
-mkEmptyAppState :: AppState
-mkEmptyAppState =
+mkEmptyAppState :: Configuration -> AppState
+mkEmptyAppState config =
   AppState
     { stateFiles = L.list FocusMain (Vec.fromList []) 1,
       stateCmdlineEditor = mkEditor "",
@@ -30,7 +30,7 @@ mkEmptyAppState =
       stateFileSelections = Set.empty,
       stateCwd = "",
       stateParentDir = "",
-      stateKeyMap = defaultKeymaps,
+      stateKeyMap = defaultKeymaps <> configKeymap config,
       stateKeySequence = []
     }
   where
@@ -48,12 +48,7 @@ mkEmptyAppState =
           ([K.KChar '\t'], CmdToggleSelection),
           ([K.KChar 'C'], CmdClearSelection),
           ([K.KChar '~'], CmdChangeDir "/home/imsohexy"),
-          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "/home/imsohexy"),
-          ([K.KChar 'g', K.KChar 'd', K.KChar 'c'], CmdChangeDir "/home/imsohexy/Documents"),
-          ([K.KChar 'g', K.KChar 'd', K.KChar 'l'], CmdChangeDir "/home/imsohexy/Downloads"),
-          ([K.KChar 'g', K.KChar 'p'], CmdChangeDir "/home/imsohexy/Pictures"),
-          -- Just for testing
-          ([K.KChar 'p'], CmdShell True "chafa -f kitty %")
+          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "/home/imsohexy")
         ]
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a

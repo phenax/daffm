@@ -73,3 +73,9 @@ type Key = V.Key
 type Keymap = Map.Map [Key] Command
 
 type KeySequence = [Key]
+
+data Configuration = Configuration
+  { configKeymap :: !Keymap,
+    configTheme :: !(Map.Map Text.Text Text.Text)
+  }
+  deriving (Show)

@@ -12,10 +12,11 @@
 - [X] Command parsing
 - [X] Cmdline must be single line
 - [X] Internal commands?
+- [X] parsing key sequence
+- [X] configuration file (toml?)
 - [ ] Error handling
+- [ ] Expand ~ to home in internal commands (cd)
 - [ ] Cmdline history
-- [ ] parsing key sequence
-- [ ] configuration file (toml?)
 - [ ] Cli arg parsing (dir arg)
 ** Right after
 - [ ] cd into dir symlinks
