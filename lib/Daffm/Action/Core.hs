@@ -32,10 +32,13 @@ goBackToParentDir = do
   dir <- gets stateParentDir
   loadDir dir (Text.pack . takeDirectory $ Text.unpack dir)
 
+changeDir :: FilePathText -> AppEvent ()
+changeDir dir = do
+  loadDir dir (Text.pack $ takeDirectory $ Text.unpack dir)
+
 goHome :: AppEvent ()
 goHome = do
-  dir <- liftIO getHomeDirectory
-  loadDir (Text.pack dir) (Text.pack $ takeDirectory dir)
+  liftIO getHomeDirectory >>= changeDir . Text.pack
 
 openSelectedFile :: AppEvent ()
 openSelectedFile = do

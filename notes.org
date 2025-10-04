@@ -1,28 +1,34 @@
-** Current
-- [X] Preserve cursor position per dir while navigating
-- [X] Cmdline must be single line
-- [X] Reload
-- [X] Run shell command
-- [X] Command substitution %
-- [X] Command substitution %d:cwd
-- [X] Show file permissions
+** Essentials
 - [X] select multiple files
+- [X] Support multikey bindings
+- [X] Show file permissions
+- [X] Run shell command
+- [X] Reload
+- [X] Preserve cursor position per dir while navigating
+- [X] Command: shell & shell! (alias for !, !!)
 - [X] Command substitution %s:selections
+- [X] Command substitution %d:cwd
+- [X] Command substitution %
+- [X] Command parsing
+- [X] Cmdline must be single line
+- [X] Internal commands?
 - [ ] Error handling
-- [ ] Command parsing
-- [ ] pipe command: Pipe selections/current to stdin of command
-- [ ] Cli arg parsing
-** Later
-- [ ] handle on open (for external integrations)
 - [ ] Cmdline history
+- [ ] parsing key sequence
+- [ ] configuration file (toml?)
+- [ ] Cli arg parsing (dir arg)
+** Right after
 - [ ] cd into dir symlinks
+- [ ] handle on open (for external integrations)
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
-- [ ] Internal commands
-- [ ] configuration file (toml?)
-- [ ] support multikey bindings?
-- [ ] bind command: define keybindings
-- [ ] watch for changes
+- [ ] Command: pipe (think about this) (pipe selection file names/file contents)
+- [ ] Allow escaping % in commands
+- [ ] Rethink % substituions
+** Later
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
+- [ ] watch for changes
+- [ ] bind command: define keybindings
+- [ ] some caching for file list?

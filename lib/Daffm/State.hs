@@ -4,7 +4,7 @@ import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
 import Control.Monad (filterM, forM)
-import Daffm.Types (AppState (..), FileInfo (..), FilePathText, FileType (..), FocusTarget (..))
+import Daffm.Types (AppState (..), Command (..), FileInfo (..), FilePathText, FileType (..), FocusTarget (..))
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -12,6 +12,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
+import qualified Graphics.Vty as K
 import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
@@ -28,8 +29,32 @@ mkEmptyAppState =
       stateListPositionCache = Map.empty,
       stateFileSelections = Set.empty,
       stateCwd = "",
-      stateParentDir = ""
+      stateParentDir = "",
+      stateKeyMap = defaultKeymaps,
+      stateKeySequence = []
     }
+  where
+    defaultKeymaps =
+      Map.fromList
+        [ ([K.KChar 'q'], CmdQuit),
+          ([K.KChar 'r', K.KChar 'r'], CmdReload),
+          ([K.KChar '!'], CmdSetCmdline "!"),
+          ([K.KChar ':'], CmdEnterCmdline),
+          ([K.KChar 'l'], CmdOpenSelection),
+          ([K.KChar 'h'], CmdGoBack),
+          ([K.KEnter], CmdOpenSelection),
+          ([K.KBS], CmdGoBack),
+          ([K.KChar 'v'], CmdToggleSelection),
+          ([K.KChar '\t'], CmdToggleSelection),
+          ([K.KChar 'C'], CmdClearSelection),
+          ([K.KChar '~'], CmdChangeDir "/home/imsohexy"),
+          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "/home/imsohexy"),
+          ([K.KChar 'g', K.KChar 'd', K.KChar 'c'], CmdChangeDir "/home/imsohexy/Documents"),
+          ([K.KChar 'g', K.KChar 'd', K.KChar 'l'], CmdChangeDir "/home/imsohexy/Downloads"),
+          ([K.KChar 'g', K.KChar 'p'], CmdChangeDir "/home/imsohexy/Pictures"),
+          -- Just for testing
+          ([K.KChar 'p'], CmdShell True "chafa -f kitty %")
+        ]
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a
 toggleSetItem val set =

@@ -6,6 +6,7 @@ import qualified Brick.Widgets.List as L
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Graphics.Vty as V
 import System.Posix.Types (FileMode, FileOffset)
 
 data FileType
@@ -39,10 +40,36 @@ data AppState = AppState
     stateFocusTarget :: FocusTarget,
     stateCwd :: FilePathText,
     stateListPositionCache :: Map.Map Text.Text Int,
-    stateParentDir :: FilePathText
+    stateParentDir :: FilePathText,
+    stateKeySequence :: KeySequence,
+    stateKeyMap :: Keymap
   }
   deriving (Show)
 
 type AppEvent = EventM FocusTarget AppState
 
 type CmdlineEditor = Editor.Editor Text.Text FocusTarget
+
+data KeyMatchResult = MatchSuccess Command | MatchPartial | MatchFailure
+  deriving (Show, Eq)
+
+data Command
+  = CmdShell Bool Text.Text
+  | CmdQuit
+  | CmdSetCmdline Text.Text
+  | CmdEnterCmdline
+  | CmdLeaveCmdline
+  | CmdOpenSelection
+  | CmdChangeDir Text.Text
+  | CmdReload
+  | CmdToggleSelection
+  | CmdClearSelection
+  | CmdGoBack
+  | CmdNoop
+  deriving (Show, Eq)
+
+type Key = V.Key
+
+type Keymap = Map.Map [Key] Command
+
+type KeySequence = [Key]

@@ -30,10 +30,7 @@
             pkg-config
           ];
 
-          devPackages = with pkgs; [
-            just
-            nodemon
-          ];
+          devPackages = with pkgs; [just];
         in {
           haskellProjects.default = {
             inherit projectRoot;
