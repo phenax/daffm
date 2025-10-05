@@ -5,13 +5,19 @@ module Daffm.Action.Commands where
 
 import qualified Brick as M
 import Control.Monad (forM_)
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Daffm.Action.Cmdline
 import Daffm.Action.Core
 import Daffm.Types
 import Daffm.Utils (trimStart)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Char (isSpace)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
+import qualified GHC.IO.Handle.Text as Proc
+import System.Process (readProcessWithExitCode)
+import qualified System.Process as Proc
 
 runCmdline :: AppEvent ()
 runCmdline = do
@@ -30,6 +36,7 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("quit", _) -> Just CmdQuit
       ("shell!", cmd') -> Just $ CmdShell True cmd'
       ("shell", cmd') -> Just $ CmdShell False cmd'
+      ("command-shell", cmd') -> Just $ CmdCommandShell cmd'
       ("back", _) -> Just CmdGoBack
       ("open", _) -> Just CmdOpenSelection
       ("reload", _) -> Just CmdReload
@@ -42,16 +49,37 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("selection-clear", _) -> Just CmdClearSelection
       _ -> Nothing
 
+readCommandLines' :: Text.Text -> IO [Text.Text]
+readCommandLines' cmd = do
+  Proc.withCreateProcess
+    (Proc.shell $ Text.unpack cmd)
+      { Proc.delegate_ctlc = True,
+        Proc.std_in = Proc.NoStream,
+        Proc.std_out = Proc.CreatePipe,
+        Proc.std_err = Proc.NoStream
+      }
+    $ \_ stdout _ p -> do
+      _ <- Proc.waitForProcess p
+      Text.lines <$> maybe (pure "") Text.hGetContents stdout
+
 processCommand :: Command -> AppEvent ()
 processCommand (CmdShell waitForKey cmd) = do
   cmdSubstitutions cmd >>= suspendAndRunShellCommand waitForKey
   reloadDir
+processCommand (CmdCommandShell cmd) = do
+  stdout <- cmdSubstitutions cmd >>= liftIO . readCommandLines'
+  forM_ stdout runIfCmd
+  reloadDir
+  where
+    runIfCmd (Text.stripPrefix "<daffm>" -> Just cmd') =
+      processCommand $ fromMaybe CmdNoop (parseCommand cmd')
+    runIfCmd _ = pure ()
 processCommand CmdQuit = M.halt
-processCommand (CmdSetCmdline txt) = enterCmdline >> setCmdlineText txt
+processCommand (CmdSetCmdline txt) = enterCmdline >> cmdSubstitutions txt >>= setCmdlineText
 processCommand CmdEnterCmdline = enterCmdline
 processCommand CmdLeaveCmdline = leaveCmdline
 processCommand CmdOpenSelection = openSelectedFile
-processCommand (CmdChangeDir dir) = changeDir dir
+processCommand (CmdChangeDir dir) = cmdSubstitutions dir >>= changeDir
 processCommand CmdReload = reloadDir
 processCommand CmdToggleSelection = toggleCurrentFileSelection
 processCommand CmdClearSelection = clearFileSelections

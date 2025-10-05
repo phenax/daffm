@@ -22,24 +22,25 @@
 - [X] Cli arg parsing (-c flag for custom config path)
 - [X] handle on open (for external integrations) (opener in custom config)
 - [X] chain multiple commands
-- [ ] Store last directory path
-- [ ] Store selections path
+- [X] Fix cmd substitution for all command args
+- [X] Command: command-shell special variant of shell that evaluates output as commands
+- [ ] Given file name, open dir of file with cursor on file
+- [ ] Store last directory path (for auto cd in shell)
+- [ ] Store selections path (for copy/move/paste across instances)
 - [ ] Command: search, search-next, search-prev
 ** Right after
-- [ ] copy/move/paste selections across instances
-  - user-land solution (write selections to file and read from second instance)
-  - socket
-- [ ] think about nvim integration (server + send back)
-- [ ] Fix keymap evaluation: If v is bound, it doesnt evaluate vd since v was found
 - [ ] Cmdline history
 - [ ] Command: pipe (think about this) (pipe selection file names/file contents)
 - [ ] Allow escaping % in commands
 - [ ] Rethink % substituions
 - [ ] theme from config
 - [ ] cd into dir symlinks
+- [ ] Fix keymap evaluation? (If vd is bound, it doesnt evaluate a v binding)
+- [ ] Config extend (extend = true will extend config.toml)
 ** Later
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
 - [ ] watch for changes
 - [ ] bind command: define keybindings
 - [ ] some caching for file list?
+- [ ] Command aliases

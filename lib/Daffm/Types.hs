@@ -55,6 +55,7 @@ data KeyMatchResult = MatchSuccess Command | MatchPartial | MatchFailure
 
 data Command
   = CmdShell Bool Text.Text
+  | CmdCommandShell Text.Text
   | CmdQuit
   | CmdSetCmdline Text.Text
   | CmdEnterCmdline
