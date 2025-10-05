@@ -4,7 +4,7 @@ import Brick.Types (Widget)
 import Brick.Widgets.Core (Padding (Max, Pad), emptyWidget, hBox, hLimit, padLeft, padRight, str, txt, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
-import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr, searchMarchAttr)
+import Daffm.Attrs (directoryAttr, directoryLinkAttr, directorySelectedAttr, fileAttr, fileSelectedAttr, invalidLinkAttr, linkAttr, searchMarchAttr)
 import Daffm.Keymap (showKeySequence)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
@@ -78,8 +78,20 @@ showFileMode mode = permchars
 fileNameView :: Bool -> FileInfo -> Widget FocusTarget
 fileNameView True (FileInfo {fileName, fileType = Directory}) = withAttr directorySelectedAttr $ txt $ fileName <> "/"
 fileNameView False (FileInfo {fileName, fileType = Directory}) = withAttr directoryAttr $ txt $ fileName <> "/"
+fileNameView _ file@(FileInfo {fileType = SymbolicLink}) = symbolicLinkNameView file
 fileNameView True (FileInfo {fileName}) = withAttr fileSelectedAttr $ txt fileName
 fileNameView False (FileInfo {fileName}) = withAttr fileAttr $ txt fileName
+
+symbolicLinkNameView :: FileInfo -> Widget n
+symbolicLinkNameView (FileInfo {fileName, fileLinkTarget, fileLinkType = Just Directory}) =
+  withAttr directoryLinkAttr (txt $ fileName <> "/") <+> txt " -> " <+> symTargetView (Just Directory) fileLinkTarget
+symbolicLinkNameView (FileInfo {fileName, fileLinkType, fileLinkTarget}) =
+  withAttr linkAttr (txt fileName) <+> txt " -> " <+> symTargetView fileLinkType fileLinkTarget
+
+symTargetView :: Maybe FileType -> Maybe Text.Text -> Widget n
+symTargetView _ Nothing = withAttr invalidLinkAttr $ txt "<none>"
+symTargetView Nothing (Just target) = withAttr invalidLinkAttr $ txt target
+symTargetView _ (Just target) = txt target
 
 cmdlineView :: AppState -> Widget FocusTarget
 cmdlineView (AppState {stateFocusTarget = FocusCmdline, stateCmdlineEditor}) =

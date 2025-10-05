@@ -1,11 +1,16 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Redundant multi-way if" #-}
 module Daffm.State where
 
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
+import Control.Exception (try)
 import Control.Monad (filterM, forM)
 import Daffm.Types
 import Daffm.Utils (trim)
+import Data.Either (fromRight)
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -13,7 +18,8 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
-import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, listDirectory, makeAbsolute, setCurrentDirectory)
+import GHC.IO.Exception (IOException (IOError))
+import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, getSymbolicLinkTarget, listDirectory, makeAbsolute, setCurrentDirectory)
 import System.FilePath (joinPath, takeDirectory)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
@@ -73,7 +79,7 @@ textAsString f = Text.pack . f . Text.unpack
 loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
   normalizedDir <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir' >>= withCwdFallback
-  stat <- Posix.getSymbolicLinkStatus $ Text.unpack normalizedDir
+  stat <- Posix.getFileStatus $ Text.unpack normalizedDir
   let (dir, targetFilePathM) =
         if Posix.isDirectory stat
           then (normalizedDir, Nothing)
@@ -106,20 +112,39 @@ getFileInfo :: FilePathText -> IO FileInfo
 getFileInfo name = do
   path <- makeAbsolute $ Text.unpack name
   stat <- Posix.getSymbolicLinkStatus path
+  let either2Maybe :: Either IOError a -> Maybe a
+      either2Maybe = either (const Nothing) Just
+  linkStat <- either2Maybe <$> try (Posix.getFileStatus path)
+  linkTarget <-
+    if
+      | Posix.isSymbolicLink stat -> Just . Text.pack <$> getSymbolicLinkTarget path
+      | otherwise -> pure Nothing
   pure $
     FileInfo
       { filePath = Text.pack path,
         fileName = name,
         fileSize = Posix.fileSize stat,
         fileMode = Posix.fileMode stat,
-        fileType = fileTypeFromStatus stat
+        fileType = fileTypeFromStatus stat,
+        fileLinkType = fileTypeFromStatus <$> linkStat,
+        fileLinkTarget = linkTarget
       }
 
 fileSorter :: FileInfo -> FileInfo -> Ordering
-fileSorter (FileInfo {fileType = Directory, fileName = fa}) (FileInfo {fileType = Directory, fileName = fb}) =
-  compare (Text.toLower fa) (Text.toLower fb)
+fileSorter
+  (FileInfo {fileType = Directory, fileName = fa})
+  (FileInfo {fileType = Directory, fileName = fb}) =
+    compare (Text.toLower fa) (Text.toLower fb)
+fileSorter
+  (FileInfo {fileType = SymbolicLink, fileLinkType = Just Directory, fileName = fa})
+  (FileInfo {fileType = SymbolicLink, fileLinkType = Just Directory, fileName = fb}) =
+    compare (Text.toLower fa) (Text.toLower fb)
+fileSorter (FileInfo {fileType = Directory}) (FileInfo {fileType = SymbolicLink, fileLinkType = Just Directory}) = LT
+fileSorter (FileInfo {fileType = SymbolicLink, fileLinkType = Just Directory}) (FileInfo {fileType = Directory}) = GT
 fileSorter (FileInfo {fileType = Directory}) _ = LT
 fileSorter _ (FileInfo {fileType = Directory}) = GT
+fileSorter (FileInfo {fileLinkType = Just Directory}) _ = LT
+fileSorter _ (FileInfo {fileLinkType = Just Directory}) = GT
 fileSorter (FileInfo {fileName = fa}) (FileInfo {fileName = fb}) =
   compare (Text.toLower fa) (Text.toLower fb)
 

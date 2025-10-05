@@ -28,16 +28,17 @@
 - [X] Config extend (extend = true will extend config.toml)
 - [X] Finish nvim integration
 - [X] Command: search, search-next, search-prev
-- [ ] Store last directory path (for auto cd in shell)
-- [ ] Store selections path (for copy/move/paste across instances)
+- [X] cd into dir symlinks
 - [ ] Command: bind
-- [ ] cd into dir symlinks
 ** Right after
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
 - [ ] theme from config
 - [ ] Cmdline history
+- [ ] Store last directory path (for auto cd in shell)
+- [ ] Store selections path (for copy/move/paste across instances)
 - [ ] Rethink % substituions
+- [ ] Preserve back directory when going inside sym link to directories
 ** Later
 - [ ] Fix keymap evaluation? (If vd is bound, it doesnt evaluate a v binding)
 - [ ] Allow escaping % in commands

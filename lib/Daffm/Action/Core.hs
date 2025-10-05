@@ -48,6 +48,7 @@ openSelectedFile :: AppEvent ()
 openSelectedFile = do
   currentFile >>= \case
     Just (FileInfo {filePath, fileType = Directory}) -> loadDir filePath
+    Just (FileInfo {filePath, fileLinkType = Just Directory}) -> loadDir filePath
     Just _ -> do
       opener <- gets (fromMaybe "echo '%F' | xargs -i xdg-open {}" . stateOpenerScript)
       cmdSubstitutions opener >>= suspendAndRunShellCommand False

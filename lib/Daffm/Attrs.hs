@@ -15,6 +15,15 @@ fileSelectedAttr = listSelectedAttr <> fileAttr
 directoryAttr :: A.AttrName
 directoryAttr = listAttr <> A.attrName "directory"
 
+linkAttr :: A.AttrName
+linkAttr = listAttr <> A.attrName "link"
+
+invalidLinkAttr :: A.AttrName
+invalidLinkAttr = linkAttr <> A.attrName "invalid"
+
+directoryLinkAttr :: A.AttrName
+directoryLinkAttr = linkAttr <> A.attrName "directory"
+
 directorySelectedAttr :: A.AttrName
 directorySelectedAttr = listSelectedAttr <> directoryAttr
 
@@ -29,6 +38,9 @@ appAttrMap =
       (listSelectedAttr, bg V.black),
       (directoryAttr, fg V.brightCyan),
       (directorySelectedAttr, fg V.brightCyan),
+      (directoryLinkAttr, fg V.green),
+      (linkAttr, fg V.brightWhite),
+      (invalidLinkAttr, fg V.red),
       (fileAttr, fg V.white),
       (fileSelectedAttr, fg V.white),
       (searchMarchAttr, fg V.magenta)

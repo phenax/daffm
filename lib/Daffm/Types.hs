@@ -30,7 +30,9 @@ data FileInfo = FileInfo
     filePath :: FilePathText,
     fileSize :: FileOffset,
     fileMode :: FileMode,
-    fileType :: FileType
+    fileType :: FileType,
+    fileLinkType :: Maybe FileType,
+    fileLinkTarget :: Maybe FilePathText
   }
   deriving (Show)
 
