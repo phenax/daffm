@@ -5,6 +5,7 @@ import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
 import Control.Monad (filterM, forM)
 import Daffm.Types
+import Daffm.Utils (trim)
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -22,7 +23,7 @@ defaultKeymaps :: Keymap
 defaultKeymaps =
   Map.fromList
     [ ([K.KChar 'q'], CmdQuit),
-      ([K.KChar 'r'], CmdReload),
+      ([K.KChar 'r', K.KChar 'r'], CmdReload),
       ([K.KChar '!'], CmdSetCmdline "!"),
       ([K.KChar ':'], CmdEnterCmdline),
       ([K.KChar 'l'], CmdOpenSelection),
@@ -51,7 +52,7 @@ mkEmptyAppState config =
       stateListPositionHistory = Map.empty,
       stateFileSelections = Set.empty,
       stateCwd = "",
-      stateKeyMap = defaultKeymaps <> configKeymap config,
+      stateKeyMap = configKeymap config <> defaultKeymaps,
       stateOpenerScript = configOpener config,
       stateKeySequence = []
     }
@@ -64,16 +65,22 @@ toggleFileSelection :: FilePathText -> AppState -> AppState
 toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
 
 normalizePath :: FilePathText -> IO FilePathText
-normalizePath (Text.null -> True) = normalizePath "~"
+normalizePath (Text.null -> True) = Text.pack <$> getHomeDirectory
 normalizePath "~" = Text.pack <$> getHomeDirectory
-normalizePath (Text.splitAt 2 -> ("~/", rest)) = do
-  home <- normalizePath "~"
-  pure . Text.pack . joinPath $ map Text.unpack [home, rest]
+normalizePath (Text.stripPrefix "~/" -> (Just rest)) = do
+  home <- getHomeDirectory
+  pure . Text.pack . joinPath $ [home, Text.unpack rest]
 normalizePath dir = pure dir
+
+stripQuotes :: Text.Text -> Text.Text
+stripQuotes txt = fromMaybe txt (double <|> single)
+  where
+    double = Text.stripPrefix "\"" txt >>= Text.stripSuffix "\""
+    single = Text.stripPrefix "'" txt >>= Text.stripSuffix "'"
 
 loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
-  dir <- normalizePath dir'
+  dir <- normalizePath . stripQuotes $ trim dir'
   doesDirectoryExist (Text.unpack dir) >>= \case
     True -> do
       setCurrentDirectory $ Text.unpack dir

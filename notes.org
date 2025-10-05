@@ -20,13 +20,17 @@
 - [X] Opener configuration
 - [X] Cli arg parsing (dir arg)
 - [X] Cli arg parsing (-c flag for custom config path)
+- [X] handle on open (for external integrations) (opener in custom config)
+- [X] chain multiple commands
+- [ ] Store last directory path
+- [ ] Store selections path
 - [ ] Command: search, search-next, search-prev
 ** Right after
-- [ ] copy/paste across instances
+- [ ] copy/move/paste selections across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
+- [ ] think about nvim integration (server + send back)
 - [ ] Fix keymap evaluation: If v is bound, it doesnt evaluate vd since v was found
-- [X] handle on open (for external integrations) (opener in custom config)
 - [ ] Cmdline history
 - [ ] Command: pipe (think about this) (pipe selection file names/file contents)
 - [ ] Allow escaping % in commands

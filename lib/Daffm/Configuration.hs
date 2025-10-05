@@ -1,12 +1,13 @@
 module Daffm.Configuration where
 
+import Control.Applicative ((<|>))
 import Control.Arrow (ArrowChoice (left))
 import Control.Exception (throwIO)
 import qualified Control.Exception as IO
 import Daffm.Action.Commands (parseCommand)
 import Daffm.Keymap (parseKeySequence)
 import Daffm.Types
-import Data.Bifunctor (Bifunctor (bimap))
+import Data.Bifunctor (Bifunctor (first))
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
@@ -25,7 +26,7 @@ getDefaultConfigFilePath "" = do
   pure $ joinPath [dir, "config.toml"]
 getDefaultConfigFilePath name = do
   dir <- getConfigDir
-  pure $ joinPath [dir, "config" <> name <> ".toml"]
+  pure $ joinPath [dir, "config." <> name <> ".toml"]
 
 resolveConfigPath :: Maybe String -> IO FilePath
 resolveConfigPath Nothing = getDefaultConfigFilePath ""
@@ -59,8 +60,11 @@ configurationCodec =
 keymapCodec :: Toml.Key -> Toml.TomlCodec Keymap
 keymapCodec = Toml.dimap (const Map.empty) toKeymap . keymapRawCodec
   where
-    keymapRawCodec = Toml.tableMap Toml._KeyText Toml.text
-    toKeymap = Map.fromList . map (bimap toKeys toCmd) . Map.toList
+    keymapRawCodec = Toml.tableMap Toml._KeyText commandCodec
+    toKeymap = Map.fromList . map (first toKeys) . Map.toList
     toKeys = fromMaybe [] . parseKeySequence . stripQuotes
     toCmd = fromMaybe CmdNoop . parseCommand
     stripQuotes txt = fromMaybe txt (Text.stripPrefix "\"" txt >>= Text.stripSuffix "\"")
+    commandCodec k = cmdCodec k <|> cmdChainCodec k
+    cmdCodec = Toml.dimap (const "") toCmd . Toml.text
+    cmdChainCodec = Toml.dimap (const []) (CmdChain . map toCmd) . Toml.arrayOf Toml._Text

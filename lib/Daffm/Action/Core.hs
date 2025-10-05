@@ -65,8 +65,8 @@ cmdSubstitutions cmd = do
   let selections = Set.elems stateFileSelections
   let selectionsOrCurrent = if Set.null stateFileSelections then [file] else selections
   let subst =
-        Text.replace "%" file
-          . Text.replace "%d" stateCwd
+        Text.replace "%" (escape file)
+          . Text.replace "%d" (escape stateCwd)
           . Text.replace "%s" (Text.unwords $ map escape selections)
           . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
           . Text.replace "%f" (Text.unwords $ map escape selectionsOrCurrent)

@@ -4,13 +4,13 @@
 module Daffm.Action.Commands where
 
 import qualified Brick as M
+import Control.Monad (forM_)
 import Daffm.Action.Cmdline
 import Daffm.Action.Core
 import Daffm.Types
 import Daffm.Utils (trimStart)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Char (isSpace)
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 
 runCmdline :: AppEvent ()
@@ -24,8 +24,7 @@ parseCommand (Text.splitAt 2 -> ("!!", cmd)) = Just $ CmdShell True cmd
 parseCommand (Text.splitAt 1 -> ("!", cmd)) = Just $ CmdShell False cmd
 parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
   where
-    splitCmdArgs = second trimStart . Text.splitAt cmdEndIdx
-    cmdEndIdx = fromMaybe (Text.length cmd) $ Text.findIndex isSpace cmd
+    splitCmdArgs = second trimStart . Text.break isSpace
     mkCmd = \case
       ("q", _) -> Just CmdQuit
       ("quit", _) -> Just CmdQuit
@@ -57,6 +56,7 @@ processCommand CmdReload = reloadDir
 processCommand CmdToggleSelection = toggleCurrentFileSelection
 processCommand CmdClearSelection = clearFileSelections
 processCommand CmdGoBack = goBackToParentDir
+processCommand (CmdChain chain) = forM_ chain processCommand
 processCommand CmdNoop = pure ()
 
 evaluateCommand :: Text.Text -> AppEvent ()

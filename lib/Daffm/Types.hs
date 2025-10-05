@@ -34,15 +34,15 @@ data FileInfo = FileInfo
 data FocusTarget = FocusCmdline | FocusMain deriving (Show, Eq, Ord)
 
 data AppState = AppState
-  { stateFiles :: L.List FocusTarget FileInfo,
-    stateCmdlineEditor :: CmdlineEditor,
-    stateFileSelections :: Set.Set FilePathText,
-    stateFocusTarget :: FocusTarget,
+  { stateCmdlineEditor :: CmdlineEditor,
     stateCwd :: FilePathText,
-    stateListPositionHistory :: Map.Map Text.Text Int,
+    stateFileSelections :: Set.Set FilePathText,
+    stateFiles :: L.List FocusTarget FileInfo,
+    stateFocusTarget :: FocusTarget,
+    stateKeyMap :: Keymap,
     stateKeySequence :: KeySequence,
-    stateOpenerScript :: Maybe Text.Text,
-    stateKeyMap :: Keymap
+    stateListPositionHistory :: Map.Map Text.Text Int,
+    stateOpenerScript :: Maybe Text.Text
   }
   deriving (Show)
 
@@ -65,6 +65,7 @@ data Command
   | CmdToggleSelection
   | CmdClearSelection
   | CmdGoBack
+  | CmdChain [Command]
   | CmdNoop
   deriving (Show, Eq)
 
