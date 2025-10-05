@@ -20,19 +20,19 @@
 - [X] Opener configuration
 - [ ] Cmdline history
 - [ ] Cli arg parsing (dir arg)
+- [ ] Cli arg parsing (-c flag for custom config path)
 ** Right after
-- [ ] Command: open-external
-- [ ] handle on open (for external integrations)
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
+- [ ] Command: open-external
+- [ ] handle on open (for external integrations)
 - [ ] Command: pipe (think about this) (pipe selection file names/file contents)
 - [ ] Allow escaping % in commands
 - [ ] Rethink % substituions
 - [ ] theme from config
 - [ ] cd into dir symlinks
 ** Later
-- [ ] Cli arg parsing (-c flag for custom config path)
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
 - [ ] watch for changes

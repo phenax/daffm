@@ -49,7 +49,8 @@ mkEmptyAppState config =
           ([K.KChar '\t'], CmdToggleSelection),
           ([K.KChar 'C'], CmdClearSelection),
           ([K.KChar '~'], CmdChangeDir "~"),
-          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~")
+          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
+          ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm")
         ]
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a

@@ -80,3 +80,6 @@ data Configuration = Configuration
     configTheme :: !(Map.Map Text.Text Text.Text)
   }
   deriving (Show)
+
+defaultConfiguration :: Configuration
+defaultConfiguration = Configuration {configKeymap = Map.empty, configOpener = Nothing, configTheme = Map.empty}
