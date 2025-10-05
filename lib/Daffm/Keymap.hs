@@ -36,7 +36,7 @@ parseKeySequence :: Text.Text -> Maybe [Key]
 parseKeySequence keytxt = parse keytxt []
   where
     parse k keys = case k of
-      (Text.null -> True) -> pure keys
+      "" -> pure keys
       (Text.stripPrefix "<tab>" -> (Just rest')) -> parse rest' $ keys <> [V.KChar '\t']
       (Text.stripPrefix "<space>" -> (Just rest')) -> parse rest' $ keys <> [V.KChar ' ']
       (Text.stripPrefix "<bs>" -> (Just rest')) -> parse rest' $ keys <> [V.KBS]

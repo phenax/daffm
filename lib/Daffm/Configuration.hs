@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use <=<" #-}
 module Daffm.Configuration where
 
 import Control.Applicative ((<|>))
@@ -35,12 +38,21 @@ resolveConfigPath (Just path) = pure path
 
 loadConfigFile :: Maybe String -> IO Configuration
 loadConfigFile pathM = do
-  resolveConfigPath pathM >>= (IO.try . Text.readFile) >>= foobar
+  cfgPath <- resolveConfigPath pathM
+  config <- load cfgPath
+  case configExtend config of
+    Just path -> do
+      baseCfgPath <- resolveConfigPath $ Just $ Text.unpack path
+      if baseCfgPath == cfgPath
+        then pure config
+        else (config <>) <$> load baseCfgPath
+    _ -> pure config
   where
-    foobar :: Either IOError Text.Text -> IO Configuration
-    foobar rawE = case rawE of
+    load = (>>= parseWithDefault) . IO.try . Text.readFile
+    parseWithDefault :: Either IOError Text.Text -> IO Configuration
+    parseWithDefault rawE = case rawE of
       Left _ -> pure defaultConfiguration
-      Right txt -> parse txt
+      Right txt -> (<> defaultConfiguration) <$> parse txt
     parse txt = case parseConfig txt of
       Left e -> throwIO $ userError $ show e
       Right c -> pure c
@@ -53,9 +65,11 @@ configurationCodec =
   Configuration
     <$> (keymapCodec "keymap" .= configKeymap)
     <*> (openerCodec "opener" .= configOpener)
+    <*> (extendCodec "extend" .= configExtend)
     <*> pure Map.empty .= configTheme
   where
     openerCodec = Toml.dioptional . Toml.text
+    extendCodec = Toml.dioptional . Toml.text
 
 keymapCodec :: Toml.Key -> Toml.TomlCodec Keymap
 keymapCodec = Toml.dimap (const Map.empty) toKeymap . keymapRawCodec

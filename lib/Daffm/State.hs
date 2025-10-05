@@ -13,32 +13,10 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
-import qualified Graphics.Vty as K
 import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, listDirectory, makeAbsolute, setCurrentDirectory)
-import System.FilePath (joinPath, takeDirectory, takeFileName)
+import System.FilePath (joinPath, takeDirectory)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
-
-defaultKeymaps :: Keymap
-defaultKeymaps =
-  Map.fromList
-    [ ([K.KChar 'q'], CmdQuit),
-      ([K.KChar 'r', K.KChar 'r'], CmdReload),
-      ([K.KChar '!'], CmdSetCmdline "!"),
-      ([K.KChar ':'], CmdEnterCmdline),
-      ([K.KChar 'l'], CmdOpenSelection),
-      ([K.KChar 'h'], CmdGoBack),
-      ([K.KEnter], CmdOpenSelection),
-      ([K.KBS], CmdGoBack),
-      ([K.KChar 'v'], CmdToggleSelection),
-      ([K.KChar '\t'], CmdToggleSelection),
-      ([K.KChar 'C'], CmdClearSelection),
-      ([K.KChar '~'], CmdChangeDir "~"),
-      ([K.KChar '$'], CmdShell False "$SHELL"),
-      ([K.KChar 'g', K.KChar 'x'], CmdShell False "!xdg-open % >/dev/null 2>&1"),
-      ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
-      ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm")
-    ]
 
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
 mkEditor = Editor.editor FocusCmdline (Just 1)
@@ -52,7 +30,7 @@ mkEmptyAppState config =
       stateListPositionHistory = Map.empty,
       stateFileSelections = Set.empty,
       stateCwd = "",
-      stateKeyMap = configKeymap config <> defaultKeymaps,
+      stateKeyMap = configKeymap config,
       stateOpenerScript = configOpener config,
       stateKeySequence = []
     }
@@ -82,12 +60,15 @@ stripQuotes txt = fromMaybe txt (double <|> single)
     double = Text.stripPrefix "\"" txt >>= Text.stripSuffix "\""
     single = Text.stripPrefix "'" txt >>= Text.stripSuffix "'"
 
+stripTrailingSlash :: Text.Text -> Text.Text
+stripTrailingSlash path = fromMaybe path $ Text.stripSuffix "/" path
+
 textAsString :: (String -> String) -> Text.Text -> Text.Text
 textAsString f = Text.pack . f . Text.unpack
 
 loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
-  normalizedDir <- (normalizePath . stripQuotes . trim) dir' >>= withCwdFallback
+  normalizedDir <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir' >>= withCwdFallback
   stat <- Posix.getSymbolicLinkStatus $ Text.unpack normalizedDir
   let (dir, targetFilePathM) =
         if Posix.isDirectory stat

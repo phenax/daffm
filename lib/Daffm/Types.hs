@@ -3,9 +3,11 @@ module Daffm.Types where
 import Brick (EventM)
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
+import Control.Applicative ((<|>))
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Graphics.Vty as K
 import qualified Graphics.Vty as V
 import System.Posix.Types (FileMode, FileOffset)
 
@@ -78,10 +80,46 @@ type KeySequence = [Key]
 
 data Configuration = Configuration
   { configKeymap :: !Keymap,
-    configOpener :: Maybe Text.Text,
+    configOpener :: !(Maybe Text.Text),
+    configExtend :: !(Maybe Text.Text),
     configTheme :: !(Map.Map Text.Text Text.Text)
   }
   deriving (Show)
 
+instance Semigroup Configuration where
+  a <> b =
+    a
+      { configKeymap = configKeymap a <> configKeymap b,
+        configOpener = configOpener a <|> configOpener b,
+        configTheme = configTheme a <> configTheme b
+      }
+
 defaultConfiguration :: Configuration
-defaultConfiguration = Configuration {configKeymap = Map.empty, configOpener = Nothing, configTheme = Map.empty}
+defaultConfiguration =
+  Configuration
+    { configKeymap = defaultKeymaps,
+      configOpener = Nothing,
+      configTheme = Map.empty,
+      configExtend = Nothing
+    }
+
+defaultKeymaps :: Keymap
+defaultKeymaps =
+  Map.fromList
+    [ ([K.KChar 'q'], CmdQuit),
+      ([K.KChar 'r', K.KChar 'r'], CmdReload),
+      ([K.KChar '!'], CmdSetCmdline "!"),
+      ([K.KChar ':'], CmdEnterCmdline),
+      ([K.KChar 'l'], CmdOpenSelection),
+      ([K.KChar 'h'], CmdGoBack),
+      ([K.KEnter], CmdOpenSelection),
+      ([K.KBS], CmdGoBack),
+      ([K.KChar 'v'], CmdToggleSelection),
+      ([K.KChar '\t'], CmdToggleSelection),
+      ([K.KChar 'C'], CmdClearSelection),
+      ([K.KChar '~'], CmdChangeDir "~"),
+      ([K.KChar '$'], CmdShell False "$SHELL"),
+      ([K.KChar 'g', K.KChar 'x'], CmdShell False "!xdg-open % >/dev/null 2>&1"),
+      ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
+      ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm")
+    ]

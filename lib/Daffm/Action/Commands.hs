@@ -15,8 +15,6 @@ import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import qualified GHC.IO.Handle.Text as Proc
-import System.Process (readProcessWithExitCode)
 import qualified System.Process as Proc
 
 runCmdline :: AppEvent ()
