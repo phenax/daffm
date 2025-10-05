@@ -17,7 +17,15 @@ import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
-import System.Process (callCommand)
+import qualified GHC.IO.Exception as Proc
+import System.Exit (ExitCode)
+import qualified System.Process as Proc
+
+runCmdline :: AppEvent ()
+runCmdline = do
+  cmd <- getCmdlineText
+  leaveCmdline
+  evaluateCommand cmd
 
 parseCommand :: Text.Text -> Maybe Command
 parseCommand (Text.splitAt 2 -> ("!!", cmd)) = Just $ CmdShell True cmd
@@ -43,16 +51,23 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("selection-clear", _) -> Just CmdClearSelection
       _ -> Nothing
 
-processCommand :: Command -> AppEvent ()
-processCommand (CmdShell True cmd) = do
-  cmd' <- Text.unpack <$> cmdSubstitutions cmd
+-- Suspend tui and run shell command
+-- When waitForKey is true, it will prompt for a key press on success
+-- When exit code is non-zero, it will print it and prompt for key press regardless of waitForKey
+suspendAndRunShellCommand :: Bool -> Text.Text -> AppEvent ()
+suspendAndRunShellCommand waitForKey cmd = do
   suspendAndResume' $ do
-    callCommand cmd'
-    putStrLn "Press any key to continue" >> void getChar
-  reloadDir
-processCommand (CmdShell False cmd) = do
-  cmd' <- Text.unpack <$> cmdSubstitutions cmd
-  suspendAndResume' $ callCommand cmd'
+    exitCode <- shellCommand $ Text.unpack cmd
+    case exitCode of
+      Proc.ExitFailure code -> do
+        putStrLn $ "Process exited with " <> show code
+        putStrLn "Press any key to continue" >> void getChar
+      _ | waitForKey -> putStrLn "Press any key to continue" >> void getChar
+      _ -> pure ()
+
+processCommand :: Command -> AppEvent ()
+processCommand (CmdShell waitForKey cmd) = do
+  cmdSubstitutions cmd >>= suspendAndRunShellCommand waitForKey
   reloadDir
 processCommand CmdQuit = M.halt
 processCommand (CmdSetCmdline txt) = enterCmdline >> setCmdlineText txt
@@ -65,6 +80,12 @@ processCommand CmdToggleSelection = toggleCurrentFileSelection
 processCommand CmdClearSelection = clearFileSelections
 processCommand CmdGoBack = goBackToParentDir
 processCommand CmdNoop = pure ()
+
+shellCommand :: String -> IO ExitCode
+shellCommand cmd = do
+  Proc.withCreateProcess
+    (Proc.shell cmd) {Proc.delegate_ctlc = True}
+    $ \_ _ _ p -> Proc.waitForProcess p
 
 cmdSubstitutions :: Text.Text -> AppEvent Text.Text
 cmdSubstitutions cmd = do
@@ -81,12 +102,6 @@ cmdSubstitutions cmd = do
           . Text.replace "%f" (Text.unwords $ map escape selectionsOrCurrent)
           . Text.replace "%F" (Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCurrent)
   pure . subst $ cmd
-
-runCmdline :: AppEvent ()
-runCmdline = do
-  cmd <- getCmdlineText
-  leaveCmdline
-  evaluateCommand cmd
 
 evaluateCommand :: Text.Text -> AppEvent ()
 evaluateCommand cmdtxt =

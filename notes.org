@@ -14,10 +14,11 @@
 - [X] Internal commands?
 - [X] parsing key sequence
 - [X] configuration file (toml?)
-- [ ] Error handling
+- [X] Error handling
 - [ ] Expand ~ to home in internal commands (cd)
 - [ ] Cmdline history
 - [ ] Cli arg parsing (dir arg)
+- [ ] Opener configuration
 ** Right after
 - [ ] cd into dir symlinks
 - [ ] handle on open (for external integrations)
@@ -27,7 +28,9 @@
 - [ ] Command: pipe (think about this) (pipe selection file names/file contents)
 - [ ] Allow escaping % in commands
 - [ ] Rethink % substituions
+- [ ] theme from config
 ** Later
+- [ ] Cli arg parsing (-c flag for custom config path)
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
 - [ ] watch for changes
