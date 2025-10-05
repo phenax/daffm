@@ -1,8 +1,7 @@
 module Specs.FooSpec where
 
 import Daffm.Action.Commands (parseCommand)
-import Daffm.Configuration (parseKey)
-import Daffm.Event (matchKeySequence)
+import Daffm.Keymap (matchKeySequence, parseKeySequence)
 import Daffm.Types
 import qualified Data.Map as Map
 import qualified Graphics.Vty as K
@@ -80,6 +79,6 @@ test = do
   describe "parseKey" $ do
     context "when given keys" $ do
       it "parses correctly" $ do
-        parseKey "gdl" `shouldBe` Just [K.KChar 'g', K.KChar 'd', K.KChar 'l']
-        parseKey "<tab>g<cr>" `shouldBe` Just [K.KChar '\t', K.KChar 'g', K.KEnter]
-        parseKey "<esc>22" `shouldBe` Just [K.KEsc, K.KChar '2', K.KChar '2']
+        parseKeySequence "gdl" `shouldBe` Just [K.KChar 'g', K.KChar 'd', K.KChar 'l']
+        parseKeySequence "<tab>g<cr>" `shouldBe` Just [K.KChar '\t', K.KChar 'g', K.KEnter]
+        parseKeySequence "<esc>22" `shouldBe` Just [K.KEsc, K.KChar '2', K.KChar '2']

@@ -1,10 +1,11 @@
 module Daffm.View where
 
 import Brick.Types (Widget)
-import Brick.Widgets.Core (Padding (Max, Pad), hBox, hLimit, padLeft, padRight, txt, vBox, vLimit, withAttr, (<+>))
+import Brick.Widgets.Core (Padding (Max, Pad), emptyWidget, hBox, hLimit, padLeft, padRight, str, txt, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
 import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr)
+import Daffm.Keymap (showKeySequence)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
 import qualified Data.Set as Set
@@ -79,14 +80,23 @@ fileNameView False (FileInfo {fileName}) = withAttr fileAttr $ txt fileName
 cmdlineView :: AppState -> Widget FocusTarget
 cmdlineView (AppState {stateFocusTarget = FocusCmdline, stateCmdlineEditor}) =
   txt ":" <+> renderEditor (txt . Text.unlines) True stateCmdlineEditor
-cmdlineView (AppState {stateFiles}) =
-  hBox [txt ":", padLeft Max $ padRight (Pad 1) posIndicator]
+cmdlineView (AppState {stateFocusTarget = FocusMain, stateFiles, stateFileSelections, stateKeySequence}) =
+  hBox
+    [ txt ":",
+      rightAligned [keysView, padLeft (Pad 2) selectionsCountView, padLeft (Pad 2) posIndicatorView]
+    ]
   where
-    posIndicator = txt $ cur <> "/" <> total
+    keysView = txt $ showKeySequence stateKeySequence
+    rightAligned = padLeft Max . padRight (Pad 1) . hBox
+    posIndicatorView = str $ cur <> "/" <> total
+    selectionsCountView =
+      if Set.null stateFileSelections
+        then emptyWidget
+        else str $ show $ Set.size stateFileSelections
     cur = case L.listSelected stateFiles of
       Nothing -> "-"
-      Just n -> Text.pack $ show (n + 1)
-    total = Text.pack $ show $ Vec.length $ L.listElements stateFiles
+      Just n -> show (n + 1)
+    total = show $ Vec.length $ L.listElements stateFiles
 
 prettyFileSize :: Int64 -> Text.Text
 prettyFileSize i

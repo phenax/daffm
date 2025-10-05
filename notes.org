@@ -16,10 +16,10 @@
 - [X] configuration file (toml?)
 - [X] Error handling
 - [X] Expand ~ to home in internal commands (cd)
+- [X] Show current pending keys in statusline
+- [ ] Opener configuration
 - [ ] Cmdline history
 - [ ] Cli arg parsing (dir arg)
-- [ ] Opener configuration
-- [ ] Show current pending keys in statusline
 ** Right after
 - [ ] handle on open (for external integrations)
 - [ ] copy/paste across instances

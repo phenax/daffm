@@ -27,7 +27,7 @@ mkEmptyAppState config =
     { stateFiles = L.list FocusMain (Vec.fromList []) 1,
       stateCmdlineEditor = mkEditor "",
       stateFocusTarget = FocusMain,
-      stateListPositionCache = Map.empty,
+      stateListPositionHistory = Map.empty,
       stateFileSelections = Set.empty,
       stateCwd = "",
       stateKeyMap = defaultKeymaps <> configKeymap config,
@@ -67,14 +67,14 @@ normalizePath (Text.splitAt 2 -> ("~/", rest)) = do
 normalizePath dir = pure dir
 
 loadDirToState :: FilePathText -> AppState -> IO AppState
-loadDirToState dir' appState@(AppState {stateCwd, stateListPositionCache}) = do
+loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
   dir <- normalizePath dir'
   doesDirectoryExist (Text.unpack dir) >>= \case
     True -> do
       setCurrentDirectory $ Text.unpack dir
       files <- listFilesInDir dir
       let prevDirPosM = findIndex ((== stateCwd) . filePath) files
-      let cachedPosM = Map.lookup dir stateListPositionCache
+      let cachedPosM = Map.lookup dir stateListPositionHistory
       let pos = fromMaybe 0 (cachedPosM <|> prevDirPosM)
       let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
       pure $
@@ -123,9 +123,9 @@ listFilesInDir dir = do
   sortBy fileSorter <$> forM files (getFileInfo . Text.pack)
 
 cacheDirPosition :: AppState -> AppState
-cacheDirPosition appState@(AppState {stateListPositionCache, stateCwd, stateFiles}) =
+cacheDirPosition appState@(AppState {stateListPositionHistory, stateCwd, stateFiles}) =
   appState
-    { stateListPositionCache = Map.insert stateCwd pos stateListPositionCache
+    { stateListPositionHistory = Map.insert stateCwd pos stateListPositionHistory
     }
   where
     pos = fromMaybe 0 $ L.listSelected stateFiles
