@@ -11,7 +11,7 @@ import System.Directory (getCurrentDirectory)
 import System.Environment (getArgs)
 
 data Args = Args
-  { argsCwd :: Maybe Text.Text,
+  { argsDirOrFile :: Maybe Text.Text,
     argsConfigFile :: Maybe FilePath,
     argsHelp :: Bool
   }
@@ -23,12 +23,11 @@ main = do
   evaluate args
 
 evaluate :: Args -> IO ()
-evaluate (Args {argsHelp = True}) =
-  putStrLn helpMenuContents
-evaluate (Args {argsCwd, argsConfigFile}) = do
+evaluate (Args {argsHelp = True}) = putStrLn helpMenuContents
+evaluate (Args {argsDirOrFile, argsConfigFile}) = do
   cwd <- getCurrentDirectory
   config <- loadConfigFile argsConfigFile
-  let dir = fromMaybe (Text.pack cwd) argsCwd
+  let dir = fromMaybe (Text.pack cwd) argsDirOrFile
   initialState <- Daffm.loadDirToState dir $ Daffm.mkEmptyAppState config
   void $ M.defaultMain Daffm.app initialState
 
@@ -37,17 +36,17 @@ parseArgs rawArgs = case parsedArgs of
   Left e -> throwIO $ userError e
   Right v -> pure v
   where
-    parsedArgs = parse rawArgs (Args {argsCwd = Nothing, argsConfigFile = Nothing, argsHelp = False})
+    parsedArgs = parse rawArgs (Args {argsDirOrFile = Nothing, argsConfigFile = Nothing, argsHelp = False})
     parse :: [String] -> Args -> Either String Args
     parse [] args = Right args
     parse ("-h" : _) args = Right $ args {argsHelp = True}
     parse ("--help" : _) args = Right $ args {argsHelp = True}
-    parse ("-c" : config : rest) args = parse rest $ args {argsConfigFile = Just config}
     parse ["-c"] _ = Left "Missing value for -c arg"
-    parse ("--config" : config : rest) args = parse rest $ args {argsConfigFile = Just config}
+    parse ("-c" : config : rest) args = parse rest $ args {argsConfigFile = Just config}
     parse ["--config"] _ = Left "Missing value for --config arg"
+    parse ("--config" : config : rest) args = parse rest $ args {argsConfigFile = Just config}
     parse (flag@('-' : _) : _) _ = Left $ "Invalid flag " <> flag
-    parse (dir : rest) args = parse rest $ args {argsCwd = Just $ Text.pack dir}
+    parse (dir : rest) args = parse rest $ args {argsDirOrFile = Just $ Text.pack dir}
 
 helpMenuContents :: String
 helpMenuContents =
@@ -58,7 +57,7 @@ helpMenuContents =
       "",
       "Arguments:",
       "  [dir]",
-      "      Directory to load. Defaults to current working directory",
+      "      Directory or file path to load. Defaults to current working directory",
       "",
       "Options:",
       "  -c, --config <CONFIG-PATH>",

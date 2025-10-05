@@ -14,8 +14,8 @@ import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as K
-import System.Directory (doesDirectoryExist, getHomeDirectory, listDirectory, makeAbsolute, setCurrentDirectory)
-import System.FilePath (joinPath)
+import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, listDirectory, makeAbsolute, setCurrentDirectory)
+import System.FilePath (joinPath, takeDirectory, takeFileName)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
 
@@ -65,12 +65,16 @@ toggleFileSelection :: FilePathText -> AppState -> AppState
 toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
 
 normalizePath :: FilePathText -> IO FilePathText
-normalizePath (Text.null -> True) = Text.pack <$> getHomeDirectory
 normalizePath "~" = Text.pack <$> getHomeDirectory
 normalizePath (Text.stripPrefix "~/" -> (Just rest)) = do
   home <- getHomeDirectory
   pure . Text.pack . joinPath $ [home, Text.unpack rest]
-normalizePath dir = pure dir
+normalizePath dir = Text.pack <$> makeAbsolute (Text.unpack dir)
+
+withCwdFallback :: FilePathText -> IO FilePathText
+withCwdFallback path = do
+  exists <- doesPathExist $ Text.unpack path
+  if exists then pure path else Text.pack <$> getCurrentDirectory
 
 stripQuotes :: Text.Text -> Text.Text
 stripQuotes txt = fromMaybe txt (double <|> single)
@@ -78,22 +82,27 @@ stripQuotes txt = fromMaybe txt (double <|> single)
     double = Text.stripPrefix "\"" txt >>= Text.stripSuffix "\""
     single = Text.stripPrefix "'" txt >>= Text.stripSuffix "'"
 
+textAsString :: (String -> String) -> Text.Text -> Text.Text
+textAsString f = Text.pack . f . Text.unpack
+
 loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
-  dir <- normalizePath . stripQuotes $ trim dir'
+  normalizedDir <- (normalizePath . stripQuotes . trim) dir' >>= withCwdFallback
+  stat <- Posix.getSymbolicLinkStatus $ Text.unpack normalizedDir
+  let (dir, targetFilePathM) =
+        if Posix.isDirectory stat
+          then (normalizedDir, Nothing)
+          else (textAsString takeDirectory normalizedDir, Just normalizedDir)
   doesDirectoryExist (Text.unpack dir) >>= \case
     True -> do
       setCurrentDirectory $ Text.unpack dir
       files <- listFilesInDir dir
       let prevDirPosM = findIndex ((== stateCwd) . filePath) files
       let cachedPosM = Map.lookup dir stateListPositionHistory
-      let pos = fromMaybe 0 (cachedPosM <|> prevDirPosM)
+      let targetFilePosM = targetFilePathM >>= \f -> findIndex ((== f) . filePath) files
+      let pos = fromMaybe 0 (targetFilePosM <|> cachedPosM <|> prevDirPosM)
       let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
-      pure $
-        appState
-          { stateFiles = list,
-            stateCwd = dir
-          }
+      pure $ appState {stateFiles = list, stateCwd = dir}
     False -> pure appState
 
 fileTypeFromStatus :: Posix.FileStatus -> FileType
