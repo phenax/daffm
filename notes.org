@@ -18,15 +18,16 @@
 - [X] Expand ~ to home in internal commands (cd)
 - [X] Show current pending keys in statusline
 - [X] Opener configuration
-- [ ] Cmdline history
-- [ ] Cli arg parsing (dir arg)
-- [ ] Cli arg parsing (-c flag for custom config path)
+- [X] Cli arg parsing (dir arg)
+- [X] Cli arg parsing (-c flag for custom config path)
+- [ ] Command: search, search-next, search-prev
 ** Right after
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
   - socket
-- [ ] Command: open-external
-- [ ] handle on open (for external integrations)
+- [ ] Fix keymap evaluation: If v is bound, it doesnt evaluate vd since v was found
+- [X] handle on open (for external integrations) (opener in custom config)
+- [ ] Cmdline history
 - [ ] Command: pipe (think about this) (pipe selection file names/file contents)
 - [ ] Allow escaping % in commands
 - [ ] Rethink % substituions

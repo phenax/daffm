@@ -18,6 +18,27 @@ import System.FilePath (joinPath)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
 
+defaultKeymaps :: Keymap
+defaultKeymaps =
+  Map.fromList
+    [ ([K.KChar 'q'], CmdQuit),
+      ([K.KChar 'r'], CmdReload),
+      ([K.KChar '!'], CmdSetCmdline "!"),
+      ([K.KChar ':'], CmdEnterCmdline),
+      ([K.KChar 'l'], CmdOpenSelection),
+      ([K.KChar 'h'], CmdGoBack),
+      ([K.KEnter], CmdOpenSelection),
+      ([K.KBS], CmdGoBack),
+      ([K.KChar 'v'], CmdToggleSelection),
+      ([K.KChar '\t'], CmdToggleSelection),
+      ([K.KChar 'C'], CmdClearSelection),
+      ([K.KChar '~'], CmdChangeDir "~"),
+      ([K.KChar '$'], CmdShell False "$SHELL"),
+      ([K.KChar 'g', K.KChar 'x'], CmdShell False "!xdg-open % >/dev/null 2>&1"),
+      ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
+      ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm")
+    ]
+
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
 mkEditor = Editor.editor FocusCmdline (Just 1)
 
@@ -34,24 +55,6 @@ mkEmptyAppState config =
       stateOpenerScript = configOpener config,
       stateKeySequence = []
     }
-  where
-    defaultKeymaps =
-      Map.fromList
-        [ ([K.KChar 'q'], CmdQuit),
-          ([K.KChar 'r', K.KChar 'r'], CmdReload),
-          ([K.KChar '!'], CmdSetCmdline "!"),
-          ([K.KChar ':'], CmdEnterCmdline),
-          ([K.KChar 'l'], CmdOpenSelection),
-          ([K.KChar 'h'], CmdGoBack),
-          ([K.KEnter], CmdOpenSelection),
-          ([K.KBS], CmdGoBack),
-          ([K.KChar 'v'], CmdToggleSelection),
-          ([K.KChar '\t'], CmdToggleSelection),
-          ([K.KChar 'C'], CmdClearSelection),
-          ([K.KChar '~'], CmdChangeDir "~"),
-          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
-          ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm")
-        ]
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a
 toggleSetItem val set =
@@ -126,9 +129,7 @@ listFilesInDir dir = do
 
 cacheDirPosition :: AppState -> AppState
 cacheDirPosition appState@(AppState {stateListPositionHistory, stateCwd, stateFiles}) =
-  appState
-    { stateListPositionHistory = Map.insert stateCwd pos stateListPositionHistory
-    }
+  appState {stateListPositionHistory = Map.insert stateCwd pos stateListPositionHistory}
   where
     pos = fromMaybe 0 $ L.listSelected stateFiles
 
