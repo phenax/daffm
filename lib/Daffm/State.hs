@@ -31,6 +31,7 @@ mkEmptyAppState config =
       stateFileSelections = Set.empty,
       stateCwd = "",
       stateKeyMap = defaultKeymaps <> configKeymap config,
+      stateOpenerScript = configOpener config,
       stateKeySequence = []
     }
   where

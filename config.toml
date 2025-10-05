@@ -1,9 +1,26 @@
+opener = """
+echo "%F" | while IFS= read file; do
+  case "$(file --mime-type "$file" -bL)" in
+    image/*) setsid -f sxiv "$file" >/dev/null 2>&1 ;;
+    video/*|image/gif) setsid -f mpv "$file" >/dev/null 2>&1 ;;
+    application/pdf) setsid -f zathura "$file" >/dev/null 2>&1 ;;
+    *) $EDITOR "$file" ;;
+  esac
+done;
+"""
+
 [keymap]
 gdl = "cd ~/Downloads"
 gdc = "cd ~/Documents"
 gp = "cd ~/Pictures"
 gsc = "cd ~/Pictures/screenshots"
-dd = "!rm -rfi %f"
-pi = "!!clear; chafa -f kitty %"
+gdp = "cd ~/dump"
+gmnt = "cd /run/media/imsohexy"
+
+r = "!!echo '%F' | vidir -v -"
 md = "cmdline-set !mkdir -p "
 mf = "cmdline-set !touch "
+dd = "!rm -rfi %f"
+sdd = "!sudo rm -rfi %f"
+
+pi = "!!clear; chafa -f kitty %"

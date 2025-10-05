@@ -27,9 +27,14 @@ configurationCodec :: Toml.TomlCodec Configuration
 configurationCodec =
   Configuration
     <$> (keymapCodec "keymap" .= configKeymap)
+    <*> (openerCodec "opener" .= configOpener)
     <*> pure Map.empty .= configTheme
   where
-    keymapCodec = Toml.dimap (const Map.empty) toKeymap . keymapRawCodec
+    openerCodec = Toml.dioptional . Toml.text
+
+keymapCodec :: Toml.Key -> Toml.TomlCodec Keymap
+keymapCodec = Toml.dimap (const Map.empty) toKeymap . keymapRawCodec
+  where
     keymapRawCodec = Toml.tableMap Toml._KeyText Toml.text
     toKeymap = Map.fromList . map (bimap toKeys toCmd) . Map.toList
     toKeys = fromMaybe [] . parseKeySequence

@@ -41,6 +41,7 @@ data AppState = AppState
     stateCwd :: FilePathText,
     stateListPositionHistory :: Map.Map Text.Text Int,
     stateKeySequence :: KeySequence,
+    stateOpenerScript :: Maybe Text.Text,
     stateKeyMap :: Keymap
   }
   deriving (Show)
@@ -75,6 +76,7 @@ type KeySequence = [Key]
 
 data Configuration = Configuration
   { configKeymap :: !Keymap,
+    configOpener :: Maybe Text.Text,
     configTheme :: !(Map.Map Text.Text Text.Text)
   }
   deriving (Show)

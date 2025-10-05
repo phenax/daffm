@@ -21,6 +21,7 @@
 - [ ] Cmdline history
 - [ ] Cli arg parsing (dir arg)
 ** Right after
+- [ ] Command: open-external
 - [ ] handle on open (for external integrations)
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)

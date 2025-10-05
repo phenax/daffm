@@ -3,11 +3,7 @@
 {-# HLINT ignore "Use for_" #-}
 module Daffm.Action.Commands where
 
-import Brick (suspendAndResume')
 import qualified Brick as M
-import qualified Brick.Widgets.List as L
-import Control.Monad (void)
-import Control.Monad.State (get)
 import Daffm.Action.Cmdline
 import Daffm.Action.Core
 import Daffm.Types
@@ -15,11 +11,7 @@ import Daffm.Utils (trimStart)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
-import qualified Data.Set as Set
 import qualified Data.Text as Text
-import qualified GHC.IO.Exception as Proc
-import System.Exit (ExitCode)
-import qualified System.Process as Proc
 
 runCmdline :: AppEvent ()
 runCmdline = do
@@ -51,20 +43,6 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("selection-clear", _) -> Just CmdClearSelection
       _ -> Nothing
 
--- Suspend tui and run shell command
--- When waitForKey is true, it will prompt for a key press on success
--- When exit code is non-zero, it will print it and prompt for key press regardless of waitForKey
-suspendAndRunShellCommand :: Bool -> Text.Text -> AppEvent ()
-suspendAndRunShellCommand waitForKey cmd = do
-  suspendAndResume' $ do
-    exitCode <- shellCommand $ Text.unpack cmd
-    case exitCode of
-      Proc.ExitFailure code -> do
-        putStrLn $ "Process exited with " <> show code
-        putStrLn "Press any key to continue" >> void getChar
-      _ | waitForKey -> putStrLn "Press any key to continue" >> void getChar
-      _ -> pure ()
-
 processCommand :: Command -> AppEvent ()
 processCommand (CmdShell waitForKey cmd) = do
   cmdSubstitutions cmd >>= suspendAndRunShellCommand waitForKey
@@ -80,28 +58,6 @@ processCommand CmdToggleSelection = toggleCurrentFileSelection
 processCommand CmdClearSelection = clearFileSelections
 processCommand CmdGoBack = goBackToParentDir
 processCommand CmdNoop = pure ()
-
-shellCommand :: String -> IO ExitCode
-shellCommand cmd = do
-  Proc.withCreateProcess
-    (Proc.shell cmd) {Proc.delegate_ctlc = True}
-    $ \_ _ _ p -> Proc.waitForProcess p
-
-cmdSubstitutions :: Text.Text -> AppEvent Text.Text
-cmdSubstitutions cmd = do
-  (AppState {stateFiles, stateCwd, stateFileSelections}) <- get
-  let file = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
-  let escape = (\s -> "'" <> s <> "'") . Text.replace "'" "\\'"
-  let selections = Set.elems stateFileSelections
-  let selectionsOrCurrent = if Set.null stateFileSelections then [file] else selections
-  let subst =
-        Text.replace "%" file
-          . Text.replace "%d" stateCwd
-          . Text.replace "%s" (Text.unwords $ map escape selections)
-          . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
-          . Text.replace "%f" (Text.unwords $ map escape selectionsOrCurrent)
-          . Text.replace "%F" (Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCurrent)
-  pure . subst $ cmd
 
 evaluateCommand :: Text.Text -> AppEvent ()
 evaluateCommand cmdtxt =
