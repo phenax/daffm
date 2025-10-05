@@ -4,7 +4,7 @@ import Brick.Types (Widget)
 import Brick.Widgets.Core (Padding (Max, Pad), emptyWidget, hBox, hLimit, padLeft, padRight, str, txt, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
-import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr)
+import Daffm.Attrs (directoryAttr, directorySelectedAttr, fileAttr, fileSelectedAttr, searchMarchAttr)
 import Daffm.Keymap (showKeySequence)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
@@ -21,7 +21,7 @@ appView appState@(AppState {stateFiles}) = [ui]
     ui = vBox [vLimit 1 header, box, vLimit 1 cmdline]
     header = headerView appState
     cmdline = cmdlineView appState
-    box = L.renderList (fileItemView appState) True stateFiles
+    box = L.renderListWithIndex (fileItemView appState) True stateFiles
 
 hFixed :: Int -> Widget n -> Widget n
 hFixed w = hLimit w . padRight Max
@@ -29,20 +29,24 @@ hFixed w = hLimit w . padRight Max
 headerView :: AppState -> Widget n
 headerView (AppState {stateCwd}) = txt stateCwd
 
-fileItemView :: AppState -> Bool -> FileInfo -> Widget FocusTarget
-fileItemView appState sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
+fileItemView :: AppState -> Int -> Bool -> FileInfo -> Widget FocusTarget
+fileItemView appState index sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
   hBox
     [ hFixed 2 fileSelectionView,
       hFixed 10 $ fileModeView fileMode,
       hFixed 6 $ fileTypeView fileType,
       hFixed 7 $ fileSizeView fileSize,
-      fileNameView sel fileInfo
+      fileNameView sel fileInfo,
+      searchMatchIndicatorView
     ]
   where
     fileSizeView = txt . prettyFileSize . fromIntegral
     fileTypeView = txt . showFileType
     fileModeView = txt . showFileMode
     fileSelectionView = txt $ if Set.member filePath $ stateFileSelections appState then ">" else " "
+    searchMatchIndicatorView
+      | index `Vec.elem` stateSearchMatches appState = padLeft (Pad 1) $ withAttr searchMarchAttr $ txt "*"
+      | otherwise = emptyWidget
 
 showFileType :: FileType -> Text.Text
 showFileType Directory = "dir"

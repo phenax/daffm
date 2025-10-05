@@ -13,6 +13,7 @@ import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FilePathText, FileTy
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Vector as Vec
 import System.Directory (getHomeDirectory)
 import qualified System.Exit as Proc
 import System.FilePath (takeDirectory)
@@ -24,6 +25,7 @@ modifyM f = get >>= f >>= put
 loadDir :: FilePathText -> AppEvent ()
 loadDir dir = do
   modifyM (liftIO . (>>= filterInvalidSelections) . loadDirToState dir)
+  applySearch
 
 reloadDir :: AppEvent ()
 reloadDir = do
@@ -93,9 +95,7 @@ currentFile = do
 
 toggleCurrentFileSelection :: AppEvent ()
 toggleCurrentFileSelection = do
-  currentFile >>= \case
-    Just file -> modify $ toggleFileSelection (filePath file)
-    Nothing -> pure ()
+  currentFile >>= maybe (pure ()) (modify . toggleFileSelection . filePath)
   moveCurrent 1
 
 clearFileSelections :: AppEvent ()
@@ -106,3 +106,46 @@ moveCurrent :: Int -> AppEvent ()
 moveCurrent count = do
   files <- gets stateFiles
   modify $ \s -> s {stateFiles = L.listMoveBy count files}
+
+setSearchTerm :: Text.Text -> AppEvent ()
+setSearchTerm "" = modify (\st -> st {stateSearchTerm = Nothing, stateSearchIndex = 0})
+setSearchTerm term = modify (\st -> st {stateSearchTerm = Just term, stateSearchIndex = 0})
+
+applySearch :: AppEvent ()
+applySearch = get >>= apply
+  where
+    apply :: AppState -> AppEvent ()
+    apply (AppState {stateSearchTerm = Nothing}) =
+      modify
+        (\st -> st {stateSearchMatches = Vec.empty, stateSearchIndex = 0})
+    apply (AppState {stateSearchTerm = Just term, stateFiles}) = do
+      let search (_, FileInfo {fileName}) = Text.toLower term `Text.isInfixOf` Text.toLower fileName
+      let matches = Vec.map fst . Vec.filter search . Vec.indexed $ L.listElements stateFiles
+      modify
+        ( \st ->
+            st
+              { stateSearchMatches = matches,
+                stateSearchIndex = wrapSearchIndex st (stateSearchIndex st)
+              }
+        )
+
+nextSearchMatch :: AppEvent ()
+nextSearchMatch = do
+  st@(AppState {stateSearchMatches, stateFiles, stateSearchIndex}) <- get
+  let nextFiles =
+        if Vec.null stateSearchMatches
+          then stateFiles
+          else L.listMoveTo (stateSearchMatches Vec.! wrapSearchIndex st stateSearchIndex) stateFiles
+  modify (\st' -> st' {stateFiles = nextFiles})
+
+wrapSearchIndex :: AppState -> Int -> Int
+wrapSearchIndex (AppState {stateSearchMatches}) nextIndex =
+  let matchCount = length stateSearchMatches
+   in if
+        | nextIndex < 0 -> matchCount - 1
+        | nextIndex >= matchCount && matchCount /= 0 -> nextIndex `mod` matchCount
+        | otherwise -> nextIndex
+
+updateSearchIndex :: (Int -> Int) -> AppEvent ()
+updateSearchIndex upd =
+  modify (\st -> st {stateSearchIndex = wrapSearchIndex st $ upd $ stateSearchIndex st})

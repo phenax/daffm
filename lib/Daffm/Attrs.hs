@@ -18,6 +18,9 @@ directoryAttr = listAttr <> A.attrName "directory"
 directorySelectedAttr :: A.AttrName
 directorySelectedAttr = listSelectedAttr <> directoryAttr
 
+searchMarchAttr :: A.AttrName
+searchMarchAttr = listAttr <> A.attrName "match-indicator"
+
 appAttrMap :: A.AttrMap
 appAttrMap =
   A.attrMap
@@ -27,5 +30,6 @@ appAttrMap =
       (directoryAttr, fg V.brightCyan),
       (directorySelectedAttr, fg V.brightCyan),
       (fileAttr, fg V.white),
-      (fileSelectedAttr, fg V.white)
+      (fileSelectedAttr, fg V.white),
+      (searchMarchAttr, fg V.magenta)
     ]

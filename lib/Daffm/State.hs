@@ -32,12 +32,16 @@ mkEmptyAppState config =
       stateCwd = "",
       stateKeyMap = configKeymap config,
       stateOpenerScript = configOpener config,
-      stateKeySequence = []
+      stateKeySequence = [],
+      stateSearchTerm = Nothing,
+      stateSearchMatches = Vec.empty,
+      stateSearchIndex = 0
     }
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a
-toggleSetItem val set =
-  if Set.member val set then Set.delete val set else Set.insert val set
+toggleSetItem val set
+  | Set.member val set = Set.delete val set
+  | otherwise = Set.insert val set
 
 toggleFileSelection :: FilePathText -> AppState -> AppState
 toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
@@ -83,7 +87,7 @@ loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = d
       let targetFilePosM = targetFilePathM >>= \f -> findIndex ((== f) . filePath) files
       let pos = fromMaybe 0 (targetFilePosM <|> cachedPosM <|> prevDirPosM)
       let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
-      pure $ appState {stateFiles = list, stateCwd = dir}
+      pure $ appState {stateFiles = list, stateCwd = dir, stateSearchIndex = 0, stateSearchMatches = Vec.empty}
     False -> pure appState
 
 fileTypeFromStatus :: Posix.FileStatus -> FileType

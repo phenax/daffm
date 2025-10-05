@@ -9,7 +9,7 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Daffm.Action.Cmdline
 import Daffm.Action.Core
 import Daffm.Types
-import Daffm.Utils (trimStart)
+import Daffm.Utils (trim, trimStart)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Char (isSpace)
 import Data.Maybe (fromMaybe)
@@ -45,6 +45,9 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("cmdline-set", txt) -> Just $ CmdSetCmdline txt
       ("selection-toggle", _) -> Just CmdToggleSelection
       ("selection-clear", _) -> Just CmdClearSelection
+      ("search", term) -> Just $ CmdSearch $ trim term
+      ("search-next", _) -> Just $ CmdSearchNext 1
+      ("search-prev", _) -> Just $ CmdSearchNext (-1)
       _ -> Nothing
 
 readCommandLines' :: Text.Text -> IO [Text.Text]
@@ -83,6 +86,8 @@ processCommand CmdToggleSelection = toggleCurrentFileSelection
 processCommand CmdClearSelection = clearFileSelections
 processCommand CmdGoBack = goBackToParentDir
 processCommand (CmdChain chain) = forM_ chain processCommand
+processCommand (CmdSearch term) = setSearchTerm term >> applySearch >> nextSearchMatch
+processCommand (CmdSearchNext change) = updateSearchIndex (+ change) >> nextSearchMatch
 processCommand CmdNoop = pure ()
 
 evaluateCommand :: Text.Text -> AppEvent ()

@@ -26,17 +26,18 @@
 - [X] Command: command-shell special variant of shell that evaluates output as commands
 - [X] Given file name, open dir of file with cursor on file
 - [X] Config extend (extend = true will extend config.toml)
-- [ ] Finish nvim integration
-- [ ] Command: search, search-next, search-prev
+- [X] Finish nvim integration
+- [X] Command: search, search-next, search-prev
 - [ ] Store last directory path (for auto cd in shell)
 - [ ] Store selections path (for copy/move/paste across instances)
+- [ ] Command: bind
+- [ ] cd into dir symlinks
 ** Right after
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
 - [ ] theme from config
 - [ ] Cmdline history
 - [ ] Rethink % substituions
-- [ ] cd into dir symlinks
 ** Later
 - [ ] Fix keymap evaluation? (If vd is bound, it doesnt evaluate a v binding)
 - [ ] Allow escaping % in commands

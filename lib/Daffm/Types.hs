@@ -7,6 +7,7 @@ import Control.Applicative ((<|>))
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Vector as Vec
 import qualified Graphics.Vty as K
 import qualified Graphics.Vty as V
 import System.Posix.Types (FileMode, FileOffset)
@@ -44,7 +45,10 @@ data AppState = AppState
     stateKeyMap :: Keymap,
     stateKeySequence :: KeySequence,
     stateListPositionHistory :: Map.Map Text.Text Int,
-    stateOpenerScript :: Maybe Text.Text
+    stateOpenerScript :: Maybe Text.Text,
+    stateSearchTerm :: Maybe Text.Text,
+    stateSearchMatches :: Vec.Vector Int,
+    stateSearchIndex :: Int
   }
   deriving (Show)
 
@@ -69,6 +73,8 @@ data Command
   | CmdClearSelection
   | CmdGoBack
   | CmdChain [Command]
+  | CmdSearch Text.Text
+  | CmdSearchNext Int
   | CmdNoop
   deriving (Show, Eq)
 
@@ -109,6 +115,9 @@ defaultKeymaps =
     [ ([K.KChar 'q'], CmdQuit),
       ([K.KChar 'r', K.KChar 'r'], CmdReload),
       ([K.KChar '!'], CmdSetCmdline "!"),
+      ([K.KChar '/'], CmdSetCmdline "search "),
+      ([K.KChar 'n'], CmdSearchNext 1),
+      ([K.KChar 'N'], CmdSearchNext (-1)),
       ([K.KChar ':'], CmdEnterCmdline),
       ([K.KChar 'l'], CmdOpenSelection),
       ([K.KChar 'h'], CmdGoBack),
