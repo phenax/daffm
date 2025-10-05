@@ -15,12 +15,12 @@
 - [X] parsing key sequence
 - [X] configuration file (toml?)
 - [X] Error handling
-- [ ] Expand ~ to home in internal commands (cd)
+- [X] Expand ~ to home in internal commands (cd)
 - [ ] Cmdline history
 - [ ] Cli arg parsing (dir arg)
 - [ ] Opener configuration
+- [ ] Show current pending keys in statusline
 ** Right after
-- [ ] cd into dir symlinks
 - [ ] handle on open (for external integrations)
 - [ ] copy/paste across instances
   - user-land solution (write selections to file and read from second instance)
@@ -29,6 +29,7 @@
 - [ ] Allow escaping % in commands
 - [ ] Rethink % substituions
 - [ ] theme from config
+- [ ] cd into dir symlinks
 ** Later
 - [ ] Cli arg parsing (-c flag for custom config path)
 - [ ] cmdline tab completion

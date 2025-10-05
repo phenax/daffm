@@ -13,7 +13,8 @@ import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as K
-import System.Directory (listDirectory, makeAbsolute, setCurrentDirectory)
+import System.Directory (doesDirectoryExist, getHomeDirectory, listDirectory, makeAbsolute, setCurrentDirectory)
+import System.FilePath (joinPath)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
 
@@ -29,7 +30,6 @@ mkEmptyAppState config =
       stateListPositionCache = Map.empty,
       stateFileSelections = Set.empty,
       stateCwd = "",
-      stateParentDir = "",
       stateKeyMap = defaultKeymaps <> configKeymap config,
       stateKeySequence = []
     }
@@ -47,31 +47,42 @@ mkEmptyAppState config =
           ([K.KChar 'v'], CmdToggleSelection),
           ([K.KChar '\t'], CmdToggleSelection),
           ([K.KChar 'C'], CmdClearSelection),
-          ([K.KChar '~'], CmdChangeDir "/home/imsohexy"),
-          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "/home/imsohexy")
+          ([K.KChar '~'], CmdChangeDir "~"),
+          ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~")
         ]
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a
 toggleSetItem val set =
-  if val `Set.member` set then Set.delete val set else Set.insert val set
+  if Set.member val set then Set.delete val set else Set.insert val set
 
 toggleFileSelection :: FilePathText -> AppState -> AppState
 toggleFileSelection path st = st {stateFileSelections = toggleSetItem path $ stateFileSelections st}
 
-loadDirToState :: FilePathText -> FilePathText -> AppState -> IO AppState
-loadDirToState dir parentDir appState@(AppState {stateCwd, stateListPositionCache}) = do
-  setCurrentDirectory $ Text.unpack dir
-  files <- listFilesInDir dir
-  let prevDirPosM = findIndex ((== stateCwd) . filePath) files
-  let cachedPosM = Map.lookup dir stateListPositionCache
-  let pos = fromMaybe 0 (cachedPosM <|> prevDirPosM)
-  let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
-  pure $
-    appState
-      { stateFiles = list,
-        stateCwd = dir,
-        stateParentDir = parentDir
-      }
+normalizePath :: FilePathText -> IO FilePathText
+normalizePath (Text.null -> True) = normalizePath "~"
+normalizePath "~" = Text.pack <$> getHomeDirectory
+normalizePath (Text.splitAt 2 -> ("~/", rest)) = do
+  home <- normalizePath "~"
+  pure . Text.pack . joinPath $ map Text.unpack [home, rest]
+normalizePath dir = pure dir
+
+loadDirToState :: FilePathText -> AppState -> IO AppState
+loadDirToState dir' appState@(AppState {stateCwd, stateListPositionCache}) = do
+  dir <- normalizePath dir'
+  doesDirectoryExist (Text.unpack dir) >>= \case
+    True -> do
+      setCurrentDirectory $ Text.unpack dir
+      files <- listFilesInDir dir
+      let prevDirPosM = findIndex ((== stateCwd) . filePath) files
+      let cachedPosM = Map.lookup dir stateListPositionCache
+      let pos = fromMaybe 0 (cachedPosM <|> prevDirPosM)
+      let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
+      pure $
+        appState
+          { stateFiles = list,
+            stateCwd = dir
+          }
+    False -> pure appState
 
 fileTypeFromStatus :: Posix.FileStatus -> FileType
 fileTypeFromStatus s =

@@ -40,7 +40,6 @@ data AppState = AppState
     stateFocusTarget :: FocusTarget,
     stateCwd :: FilePathText,
     stateListPositionCache :: Map.Map Text.Text Int,
-    stateParentDir :: FilePathText,
     stateKeySequence :: KeySequence,
     stateKeyMap :: Keymap
   }

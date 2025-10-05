@@ -18,23 +18,23 @@ import System.Process (callProcess)
 modifyM :: (MonadState s m) => (s -> m s) -> m ()
 modifyM f = get >>= f >>= put
 
-loadDir :: FilePathText -> FilePathText -> AppEvent ()
-loadDir dir parentDir = do
-  modifyM (liftIO . (>>= filterInvalidSelections) . loadDirToState dir parentDir)
+loadDir :: FilePathText -> AppEvent ()
+loadDir dir = do
+  modifyM (liftIO . (>>= filterInvalidSelections) . loadDirToState dir)
 
 reloadDir :: AppEvent ()
 reloadDir = do
-  AppState {stateCwd, stateParentDir} <- get
-  loadDir stateCwd stateParentDir
+  AppState {stateCwd} <- get
+  loadDir stateCwd
 
 goBackToParentDir :: AppEvent ()
 goBackToParentDir = do
-  dir <- gets stateParentDir
-  loadDir dir (Text.pack . takeDirectory $ Text.unpack dir)
+  dir <- gets (Text.pack . takeDirectory . Text.unpack . stateCwd)
+  loadDir dir
 
 changeDir :: FilePathText -> AppEvent ()
 changeDir dir = do
-  loadDir dir (Text.pack $ takeDirectory $ Text.unpack dir)
+  loadDir dir
 
 goHome :: AppEvent ()
 goHome = do
@@ -47,8 +47,7 @@ openSelectedFile = do
     Nothing -> pure ()
 
 openFile :: FileInfo -> AppEvent ()
-openFile (FileInfo {filePath, fileType = Directory}) = do
-  gets stateCwd >>= loadDir filePath
+openFile (FileInfo {filePath, fileType = Directory}) = loadDir filePath
 openFile (FileInfo {filePath, fileType}) = do
   suspendAndResume' $ do
     putStrLn $ "Opening " <> show fileType <> ": " <> Text.unpack filePath

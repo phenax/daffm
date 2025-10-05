@@ -1,7 +1,7 @@
 [keymap]
-gdl = "cd /home/imsohexy/Downloads"
-gdc = "cd /home/imsohexy/Documents"
-gp = "cd /home/imsohexy/Pictures"
-gsc = "cd /home/imsohexy/Pictures/screenshots"
+gdl = "cd ~/Downloads"
+gdc = "cd ~/Documents"
+gp = "cd ~/Pictures"
+gsc = "cd ~/Pictures/screenshots"
 dd = "!rm -rfi %f"
 pi = "!!clear; chafa -f kitty %"
