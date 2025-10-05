@@ -23,4 +23,4 @@ mf = "cmdline-set !touch "
 dd = "!rm -rfi %f"
 sdd = "!sudo rm -rfi %f"
 
-pi = "!!clear; chafa -f kitty %"
+"<space>p" = "!!clear; chafa -f kitty %"

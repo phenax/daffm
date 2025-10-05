@@ -37,5 +37,6 @@ keymapCodec = Toml.dimap (const Map.empty) toKeymap . keymapRawCodec
   where
     keymapRawCodec = Toml.tableMap Toml._KeyText Toml.text
     toKeymap = Map.fromList . map (bimap toKeys toCmd) . Map.toList
-    toKeys = fromMaybe [] . parseKeySequence
+    toKeys = fromMaybe [] . parseKeySequence . stripQuotes
     toCmd = fromMaybe CmdNoop . parseCommand
+    stripQuotes txt = fromMaybe txt (Text.stripPrefix "\"" txt >>= Text.stripSuffix "\"")
