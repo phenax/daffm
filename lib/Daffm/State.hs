@@ -10,7 +10,6 @@ import Control.Exception (try)
 import Control.Monad (filterM, forM)
 import Daffm.Types
 import Daffm.Utils (trim)
-import Data.Either (fromRight)
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -18,7 +17,6 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
-import GHC.IO.Exception (IOException (IOError))
 import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, getSymbolicLinkTarget, listDirectory, makeAbsolute, setCurrentDirectory)
 import System.FilePath (joinPath, takeDirectory)
 import System.PosixCompat (fileExist)

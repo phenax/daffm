@@ -77,6 +77,7 @@ data Command
   | CmdChain [Command]
   | CmdSearch Text.Text
   | CmdSearchNext Int
+  | CmdKeymapSet [Key] Command
   | CmdNoop
   deriving (Show, Eq)
 

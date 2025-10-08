@@ -6,12 +6,15 @@ module Daffm.Action.Commands where
 import qualified Brick as M
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.State (modify)
 import Daffm.Action.Cmdline
 import Daffm.Action.Core
+import Daffm.Keymap (parseKeySequence)
 import Daffm.Types
 import Daffm.Utils (trim, trimStart)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Char (isSpace)
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -48,6 +51,10 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("search", term) -> Just $ CmdSearch $ trim term
       ("search-next", _) -> Just $ CmdSearchNext 1
       ("search-prev", _) -> Just $ CmdSearchNext (-1)
+      ("map", Text.break isSpace -> (keysraw, cmdraw)) -> do
+        keys <- parseKeySequence keysraw
+        cmd' <- parseCommand $ trimStart cmdraw
+        pure $ CmdKeymapSet keys cmd'
       _ -> Nothing
 
 readCommandLines' :: Text.Text -> IO [Text.Text]
@@ -88,6 +95,7 @@ processCommand CmdGoBack = goBackToParentDir
 processCommand (CmdChain chain) = forM_ chain processCommand
 processCommand (CmdSearch term) = setSearchTerm term >> applySearch >> nextSearchMatch
 processCommand (CmdSearchNext change) = updateSearchIndex (+ change) >> nextSearchMatch
+processCommand (CmdKeymapSet keys command) = modify $ \s -> s {stateKeyMap = Map.insert keys command $ stateKeyMap s}
 processCommand CmdNoop = pure ()
 
 evaluateCommand :: Text.Text -> AppEvent ()

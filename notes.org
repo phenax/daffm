@@ -21,19 +21,19 @@
 - [X] Cli arg parsing (dir arg)
 - [X] Cli arg parsing (-c flag for custom config path)
 - [X] handle on open (for external integrations) (opener in custom config)
+- [X] Given file name, open dir of file with cursor on file
+** Right after
 - [X] chain multiple commands
 - [X] Fix cmd substitution for all command args
 - [X] Command: command-shell special variant of shell that evaluates output as commands
-- [X] Given file name, open dir of file with cursor on file
 - [X] Config extend (extend = true will extend config.toml)
 - [X] Finish nvim integration
 - [X] Command: search, search-next, search-prev
 - [X] cd into dir symlinks
-- [ ] Command: bind
-** Right after
+- [X] Command: map
+- [ ] theme from config
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
-- [ ] theme from config
 - [ ] Cmdline history
 - [ ] Store last directory path (for auto cd in shell)
 - [ ] Store selections path (for copy/move/paste across instances)
