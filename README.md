@@ -1,5 +1,8 @@
 # Daffm
-Dumb as fuck file manager is a minimal tui file manager
+Dumb as fuck file manager is a minimal tui file manager with the goal of not being a file manager.
+At its core, it only provides a directory browser, providing ways to conviniently run shell commands to manage your files via keybinds and command line input.
+
+(documentation wip)
 
 ![screenshot](./media/screenshot.jpg)
 
@@ -9,12 +12,11 @@ Dumb as fuck file manager is a minimal tui file manager
 
 
 ## Config
-Configuration is managed in toml.
-By default it will try to load `$XDG_CONFIG_HOME/daffm/config.toml`.
+Configuration is written in toml. By default it will try to load `$XDG_CONFIG_HOME/daffm/config.toml`.
 You can load config in a different path using `daffm -c <path-to-config>`.
 You can also store alternate configs in `$XDG_CONFIG_HOME/daffm/config.custom-thing.toml` and load it as `daffm -c @custom-thing`.
 
-Heres an example config for reference:
+Here's an example config for reference:
 
 ```toml
 # `opener` runs when opening a file or selections
@@ -32,17 +34,37 @@ gdl = "cd ~/Downloads"
 gdc = "cd ~/Documents"
 gp = "cd ~/Pictures"
 
-rn = "!!echo '%F' | vidir -v -" # Uses vidir (moreutils) to rename selected files/directories
+# File management
+rn = ["!!clear; echo '%F' | vidir -v -", "selection-clear"] # Uses vidir (moreutils) to rename current or selected files
 md = "cmdline-set !mkdir -p " # Prefills cmdline
 mf = "cmdline-set !touch "
-dd = "!rm -rfi %f"
-sdd = "!sudo rm -rfi %f"
-cp = "cmdline-set !cp -f % %"
+dd = "!!clear; rm -rfIv %f"
+sdd = "!!clear; sudo rm -rfIv %f"
+cc = ["!!cp % %.dup", "selection-clear"]
+cp = ["!!cp -irv %s -t %d", "selection-clear"]
+mv = ["!!mv -iv %s -t %d", "selection-clear"]
 
-# Copes file to clipboard
-"<space>yy" = """!
-xclip -selection clipboard -t $(file --mime-type '%' -bL) -i '%'
+# Copy absolute file path to clipboard
+YY = "!echo -n % | xclip -selection clipboard"
+# Copy relative file path to clipboard (Relative to DAFFM_PATH_RELATIVE_TO or cwd)
+yy = """shell
+relpath=$(realpath -s --relative-to="${DAFFM_PATH_RELATIVE_TO:-$PWD}" %)
+echo -n "$relpath" | xclip -selection clipboard
 """
+# Copy entire file to clipboard
+yf = """shell
+xclip -selection clipboard -t $(file --mime-type % -bL) -i %
+"""
+
+# View image inside terminal
+"<space>p" = "!!clear; chafa -f kitty %"
+
+# Poor man's marks (mark directory by creating a binding)
+# m1 marks current directory and <space>1 jumps to that directory
+m1 = """command-shell echo "<daffm>map <space>1 cd %d" """
+m2 = """command-shell echo "<daffm>map <space>2 cd %d" """
+m3 = """command-shell echo "<daffm>map <space>3 cd %d" """
+m4 = """command-shell echo "<daffm>map <space>4 cd %d" """
 ```
 
 The substituions (%,%f,%s,%F,%S) are replaced with absolute file paths
@@ -61,13 +83,23 @@ q = "quit"
 rr = "reload"
 "!" = "cmdline-set !"
 ":" = "cmdline-enter"
+
+# Search in directory
+"/" = "cmdline-set search "
+n = "search-next"
+N = "search-prev"
+
+# Navigation (j/k for up/down)
 l = "open"
 h = "back"
 "<cr>" = "open"
 "<bs>" = "back"
+
+# Selection
 v = "selection-toggle" # select/unselect files
 "<tab>" = "selection-toggle"
 C = "selection-clear"
+
 "~" = "cd ~"
 gh = "cd ~" # Go home
 "$" = "$SHELL" # drop to shell

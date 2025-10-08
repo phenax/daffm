@@ -32,6 +32,7 @@
 - [X] cd into dir symlinks
 - [X] Command: map
 - [ ] theme from config
+- [ ] shorten/trim from left in header for long paths
 - [ ] cmdline tab completion
 - [ ] Allow escaping % in commands
 - [ ] Cmdline history

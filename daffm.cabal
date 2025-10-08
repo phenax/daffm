@@ -64,6 +64,7 @@ library lib-daffm
     Daffm.Action.Commands
     Daffm.Action.Core
     Daffm.Action.Keymap
+    Daffm.Args
     Daffm.Attrs
     Daffm.Configuration
     Daffm.Event

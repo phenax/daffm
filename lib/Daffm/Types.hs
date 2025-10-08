@@ -103,6 +103,13 @@ instance Semigroup Configuration where
         configTheme = configTheme a <> configTheme b
       }
 
+data Args = Args
+  { argsDirOrFile :: Maybe Text.Text,
+    argsConfigFile :: Maybe FilePath,
+    argsHelp :: Bool
+  }
+  deriving (Show)
+
 defaultConfiguration :: Configuration
 defaultConfiguration =
   Configuration
