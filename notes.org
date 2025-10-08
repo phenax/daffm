@@ -31,19 +31,19 @@
 - [X] Command: search, search-next, search-prev
 - [X] cd into dir symlinks
 - [X] Command: map
-- [ ] theme from config
-- [ ] shorten/trim from left in header for long paths
-- [ ] cmdline tab completion
+- [X] shorten/trim from left in header for long paths
 - [ ] Allow escaping % in commands
 - [ ] Cmdline history
 - [ ] Store last directory path (for auto cd in shell)
-- [ ] Store selections path (for copy/move/paste across instances)
-- [ ] Rethink % substituions
 - [ ] Preserve back directory when going inside sym link to directories
 ** Later
-- [ ] Fix keymap evaluation? (If vd is bound, it doesnt evaluate a v binding)
+- [ ] Rethink % substituions
+- [ ] cmdline tab completion
+- [ ] theme from config
+- [ ] Fix keymap evaluation with timeout? (If vd is bound, it doesnt evaluate a v binding)
 - [ ] Allow escaping % in commands
-- [ ] watch for changes
-- [ ] bind command: define keybindings
+- [ ] Custom commands
+- [ ] aliases for builtin commands
 - [ ] some caching for file list?
-- [ ] Command aliases
+- [ ] copy/move/paste across instances?
+- [ ] watch for changes?

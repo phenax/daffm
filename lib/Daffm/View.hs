@@ -1,7 +1,7 @@
 module Daffm.View where
 
-import Brick.Types (Widget)
-import Brick.Widgets.Core (Padding (Max, Pad), emptyWidget, hBox, hLimit, padLeft, padRight, str, txt, vBox, vLimit, withAttr, (<+>))
+import Brick.Types (Context (availWidth), Size (Fixed), Widget (Widget, render), getContext)
+import Brick.Widgets.Core (Padding (Max, Pad), TextWidth (textWidth), emptyWidget, hBox, hLimit, padLeft, padRight, str, txt, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
 import Daffm.Attrs (directoryAttr, directoryLinkAttr, directorySelectedAttr, fileAttr, fileSelectedAttr, invalidLinkAttr, linkAttr, searchMarchAttr)
@@ -27,7 +27,15 @@ hFixed :: Int -> Widget n -> Widget n
 hFixed w = hLimit w . padRight Max
 
 headerView :: AppState -> Widget n
-headerView (AppState {stateCwd}) = txt stateCwd
+headerView (AppState {stateCwd}) = Widget Fixed Fixed $ do
+  c <- getContext
+  let width = availWidth c - 2 -- with padding
+  render . toWidget . trunc width $ stateCwd
+  where
+    toWidget = padLeft (Pad 1) . padRight (Pad 1) . txt
+    trunc width text
+      | width < textWidth text = "…" <> Text.takeEnd (width - 1) text
+      | otherwise = Text.takeEnd width text
 
 fileItemView :: AppState -> Int -> Bool -> FileInfo -> Widget FocusTarget
 fileItemView appState index sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
