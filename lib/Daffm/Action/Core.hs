@@ -25,24 +25,21 @@ modifyM f = get >>= f >>= put
 loadDir :: FilePathText -> AppEvent ()
 loadDir dir = do
   modifyM (liftIO . (>>= filterInvalidSelections) . loadDirToState dir)
-  applySearch
+  applySearch -- Apply search after loading dir to update match indexes
 
 reloadDir :: AppEvent ()
-reloadDir = do
-  AppState {stateCwd} <- get
-  loadDir stateCwd
+reloadDir = gets stateCwd >>= loadDir
 
 goBackToParentDir :: AppEvent ()
 goBackToParentDir = do
-  dir <- gets (Text.pack . takeDirectory . Text.unpack . stateCwd)
-  loadDir dir
+  parentDir <- gets (Text.pack . takeDirectory . Text.unpack . stateCwd)
+  loadDir parentDir
 
 changeDir :: FilePathText -> AppEvent ()
 changeDir = loadDir
 
 goHome :: AppEvent ()
-goHome = do
-  liftIO getHomeDirectory >>= changeDir . Text.pack
+goHome = liftIO getHomeDirectory >>= changeDir . Text.pack
 
 openSelectedFile :: AppEvent ()
 openSelectedFile = do
@@ -54,99 +51,98 @@ openSelectedFile = do
       cmdSubstitutions opener >>= suspendAndRunShellCommand False
     Nothing -> pure ()
 
-shellCommand :: String -> IO Proc.ExitCode
-shellCommand cmd = do
-  Proc.withCreateProcess
-    (Proc.shell cmd) {Proc.delegate_ctlc = True}
-    $ \_ _ _ p -> Proc.waitForProcess p
-
 cmdSubstitutions :: Text.Text -> AppEvent Text.Text
-cmdSubstitutions cmd = do
-  (AppState {stateFiles, stateCwd, stateFileSelections}) <- get
-  let file = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
-  let escape = (\s -> "'" <> s <> "'") . Text.replace "'" "\\'"
-  let selections = Set.elems stateFileSelections
-  let selectionsOrCurrent = if Set.null stateFileSelections then [file] else selections
-  let subst =
-        Text.replace "%" (escape file)
-          . Text.replace "%d" (escape stateCwd)
-          . Text.replace "%s" (Text.unwords $ map escape selections)
-          . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
-          . Text.replace "%f" (Text.unwords $ map escape selectionsOrCurrent)
-          . Text.replace "%F" (Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCurrent)
-  pure . subst $ cmd
+cmdSubstitutions cmd = gets (`substitute` cmd)
+  where
+    escape = (\s -> "'" <> s <> "'") . Text.replace "'" "\\'"
+    substitute (AppState {stateFiles, stateCwd, stateFileSelections}) =
+      Text.replace "%" (escape cursorFile)
+        . Text.replace "%d" (escape stateCwd)
+        . Text.replace "%s" (Text.unwords $ map escape selections)
+        . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
+        . Text.replace "%f" (Text.unwords $ map escape selectionsOrCursor)
+        . Text.replace "%F" (Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCursor)
+      where
+        cursorFile = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
+        selections = Set.elems stateFileSelections
+        selectionsOrCursor = if Set.null stateFileSelections then [cursorFile] else selections
 
 -- Suspend tui and run shell command
 -- When waitForKey is true, it will prompt for a key press on success
 -- When exit code is non-zero, it will print it and prompt for key press regardless of waitForKey
 suspendAndRunShellCommand :: Bool -> Text.Text -> AppEvent ()
 suspendAndRunShellCommand waitForKey cmd = do
-  suspendAndResume' $ do
-    exitCode <- shellCommand $ Text.unpack cmd
-    case exitCode of
+  suspendAndResume' $
+    shellCommand (Text.unpack cmd) >>= \case
       Proc.ExitFailure code -> do
         putStrLn $ "Process exited with " <> show code
         putStrLn "Press any key to continue" >> void getChar
       _ | waitForKey -> putStrLn "Press any key to continue" >> void getChar
       _ -> pure ()
 
+shellCommand :: String -> IO Proc.ExitCode
+shellCommand cmd = do
+  Proc.withCreateProcess
+    (Proc.shell cmd) {Proc.delegate_ctlc = True}
+    $ \_ _ _ p -> Proc.waitForProcess p
+
 currentFile :: AppEvent (Maybe FileInfo)
-currentFile = do
-  gets (fmap snd . L.listSelectedElement . stateFiles)
+currentFile = gets (fmap snd . L.listSelectedElement . stateFiles)
 
 toggleCurrentFileSelection :: AppEvent ()
 toggleCurrentFileSelection = do
-  currentFile >>= maybe (pure ()) (modify . toggleFileSelection . filePath)
+  currentFile >>= \case
+    Just fileInfo -> modify . toggleFileSelection . filePath $ fileInfo
+    Nothing -> pure ()
   moveCurrent 1
 
 clearFileSelections :: AppEvent ()
 clearFileSelections =
-  modify $ \s -> s {stateFileSelections = Set.empty}
+  modify $ \st -> st {stateFileSelections = Set.empty}
 
 moveCurrent :: Int -> AppEvent ()
-moveCurrent count = do
-  files <- gets stateFiles
-  modify $ \s -> s {stateFiles = L.listMoveBy count files}
+moveCurrent count =
+  modify $ \st -> st {stateFiles = L.listMoveBy count $ stateFiles st}
 
 setSearchTerm :: Text.Text -> AppEvent ()
-setSearchTerm "" = modify (\st -> st {stateSearchTerm = Nothing, stateSearchIndex = 0})
-setSearchTerm term = modify (\st -> st {stateSearchTerm = Just term, stateSearchIndex = 0})
+setSearchTerm "" = modify $ \st -> st {stateSearchTerm = Nothing, stateSearchIndex = 0}
+setSearchTerm term = modify $ \st -> st {stateSearchTerm = Just term, stateSearchIndex = 0}
 
 applySearch :: AppEvent ()
-applySearch = get >>= apply
+applySearch = get >>= search
   where
-    apply :: AppState -> AppEvent ()
-    apply (AppState {stateSearchTerm = Nothing}) =
-      modify
-        (\st -> st {stateSearchMatches = Vec.empty, stateSearchIndex = 0})
-    apply (AppState {stateSearchTerm = Just term, stateFiles}) = do
-      let search (_, FileInfo {fileName}) = Text.toLower term `Text.isInfixOf` Text.toLower fileName
-      let matches = Vec.map fst . Vec.filter search . Vec.indexed $ L.listElements stateFiles
-      modify
-        ( \st ->
-            st
-              { stateSearchMatches = matches,
-                stateSearchIndex = wrapSearchIndex st (stateSearchIndex st)
-              }
-        )
+    search :: AppState -> AppEvent ()
+    search (AppState {stateSearchTerm = Nothing}) =
+      modify $ \st -> st {stateSearchMatches = Vec.empty, stateSearchIndex = 0}
+    search (AppState {stateSearchTerm = Just term, stateFiles}) =
+      modify $
+        \st ->
+          st
+            { stateSearchMatches = searchFiles stateFiles,
+              stateSearchIndex = wrapSearchIndex st $ stateSearchIndex st
+            }
+      where
+        isAMatch (FileInfo {fileName}) = Text.toLower term `Text.isInfixOf` Text.toLower fileName
+        searchFiles = Vec.map fst . Vec.filter (isAMatch . snd) . Vec.indexed . L.listElements
 
 nextSearchMatch :: AppEvent ()
-nextSearchMatch = do
-  st@(AppState {stateSearchMatches, stateFiles, stateSearchIndex}) <- get
-  let nextFiles =
-        if Vec.null stateSearchMatches
-          then stateFiles
-          else L.listMoveTo (stateSearchMatches Vec.! wrapSearchIndex st stateSearchIndex) stateFiles
-  modify (\st' -> st' {stateFiles = nextFiles})
+nextSearchMatch =
+  modify (\st -> st {stateFiles = forwardSearch st})
+  where
+    forwardSearch st@(AppState {stateSearchMatches, stateFiles, stateSearchIndex}) =
+      if Vec.null stateSearchMatches
+        then stateFiles
+        else L.listMoveTo (stateSearchMatches Vec.! wrapSearchIndex st stateSearchIndex) stateFiles
 
 wrapSearchIndex :: AppState -> Int -> Int
 wrapSearchIndex (AppState {stateSearchMatches}) nextIndex =
-  let matchCount = length stateSearchMatches
-   in if
-        | nextIndex < 0 -> matchCount - 1
-        | nextIndex >= matchCount && matchCount /= 0 -> nextIndex `mod` matchCount
-        | otherwise -> nextIndex
+  if
+    | nextIndex < 0 -> matchCount - 1
+    | nextIndex >= matchCount && matchCount /= 0 -> nextIndex `mod` matchCount
+    | otherwise -> nextIndex
+  where
+    matchCount = length stateSearchMatches
 
 updateSearchIndex :: (Int -> Int) -> AppEvent ()
-updateSearchIndex upd =
-  modify (\st -> st {stateSearchIndex = wrapSearchIndex st $ upd $ stateSearchIndex st})
+updateSearchIndex update =
+  modify $ \st -> st {stateSearchIndex = wrapSearchIndex st $ update $ stateSearchIndex st}

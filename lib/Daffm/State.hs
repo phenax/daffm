@@ -3,11 +3,13 @@
 {-# HLINT ignore "Redundant multi-way if" #-}
 module Daffm.State where
 
+import Brick (suspendAndResume')
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
 import Control.Exception (try)
 import Control.Monad (filterM, forM)
+import qualified Debug.Trace as Debug
 import Daffm.Types
 import Daffm.Utils (trim)
 import Data.List (findIndex, sortBy)
@@ -69,6 +71,7 @@ stripQuotes txt = fromMaybe txt (double <|> single)
     single = Text.stripPrefix "'" txt >>= Text.stripSuffix "'"
 
 stripTrailingSlash :: Text.Text -> Text.Text
+stripTrailingSlash path@"/" = path
 stripTrailingSlash path = fromMaybe path $ Text.stripSuffix "/" path
 
 textAsString :: (String -> String) -> Text.Text -> Text.Text
@@ -78,7 +81,7 @@ loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
   normalizedDir <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir' >>= withCwdFallback
   stat <- Posix.getFileStatus $ Text.unpack normalizedDir
-  let (dir, targetFilePathM) =
+  let (dir, targetFilePath) =
         if Posix.isDirectory stat
           then (normalizedDir, Nothing)
           else (textAsString takeDirectory normalizedDir, Just normalizedDir)
@@ -86,10 +89,10 @@ loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = d
     True -> do
       setCurrentDirectory $ Text.unpack dir
       files <- listFilesInDir dir
-      let prevDirPosM = findIndex ((== stateCwd) . filePath) files
-      let cachedPosM = Map.lookup dir stateListPositionHistory
-      let targetFilePosM = targetFilePathM >>= \f -> findIndex ((== f) . filePath) files
-      let pos = fromMaybe 0 (targetFilePosM <|> cachedPosM <|> prevDirPosM)
+      let prevDirPos = findIndex ((== stateCwd) . filePath) files
+      let cachedPos = Map.lookup dir stateListPositionHistory
+      let targetFilePos = targetFilePath >>= \target -> findIndex ((== target) . filePath) files
+      let pos = fromMaybe 0 (targetFilePos <|> cachedPos <|> prevDirPos)
       let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
       pure $ appState {stateFiles = list, stateCwd = dir, stateSearchIndex = 0, stateSearchMatches = Vec.empty}
     False -> pure appState

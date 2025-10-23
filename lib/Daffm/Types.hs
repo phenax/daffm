@@ -8,7 +8,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Vector as Vec
-import qualified Graphics.Vty as K
 import qualified Graphics.Vty as V
 import System.Posix.Types (FileMode, FileOffset)
 
@@ -61,6 +60,9 @@ type CmdlineEditor = Editor.Editor Text.Text FocusTarget
 data KeyMatchResult = MatchSuccess Command | MatchPartial | MatchFailure
   deriving (Show, Eq)
 
+data MoveInc = MoveDown Int | MoveUp Int | MoveTo Int | MoveToEnd
+  deriving (Show, Eq)
+
 data Command
   = CmdShell Bool Text.Text
   | CmdCommandShell Text.Text
@@ -78,6 +80,7 @@ data Command
   | CmdSearch Text.Text
   | CmdSearchNext Int
   | CmdKeymapSet [Key] Command
+  | CmdMove MoveInc
   | CmdNoop
   deriving (Show, Eq)
 
@@ -110,35 +113,3 @@ data Args = Args
   }
   deriving (Show)
 
-defaultConfiguration :: Configuration
-defaultConfiguration =
-  Configuration
-    { configKeymap = defaultKeymaps,
-      configOpener = Nothing,
-      configTheme = Map.empty,
-      configExtend = Nothing
-    }
-
-defaultKeymaps :: Keymap
-defaultKeymaps =
-  Map.fromList
-    [ ([K.KChar 'q'], CmdQuit),
-      ([K.KChar 'r', K.KChar 'r'], CmdReload),
-      ([K.KChar '!'], CmdSetCmdline "!"),
-      ([K.KChar '/'], CmdSetCmdline "search "),
-      ([K.KChar 'n'], CmdSearchNext 1),
-      ([K.KChar 'N'], CmdSearchNext (-1)),
-      ([K.KChar ':'], CmdEnterCmdline),
-      ([K.KChar 'l'], CmdOpenSelection),
-      ([K.KChar 'h'], CmdGoBack),
-      ([K.KEnter], CmdOpenSelection),
-      ([K.KBS], CmdGoBack),
-      ([K.KChar 'v'], CmdToggleSelection),
-      ([K.KChar '\t'], CmdToggleSelection),
-      ([K.KChar 'C'], CmdClearSelection),
-      ([K.KChar '~'], CmdChangeDir "~"),
-      ([K.KChar '$'], CmdShell False "$SHELL"),
-      ([K.KChar 'g', K.KChar 'x'], CmdShell False "!xdg-open % >/dev/null 2>&1"),
-      ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
-      ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm")
-    ]

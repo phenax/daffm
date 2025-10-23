@@ -15,10 +15,48 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import qualified Graphics.Vty as K
 import System.Directory (XdgDirectory (XdgConfig), getXdgDirectory)
 import System.FilePath (joinPath)
 import Toml ((.=))
 import qualified Toml
+
+defaultConfiguration :: Configuration
+defaultConfiguration =
+  Configuration
+    { configKeymap = defaultKeymaps,
+      configOpener = Nothing,
+      configTheme = Map.empty,
+      configExtend = Nothing
+    }
+
+defaultKeymaps :: Keymap
+defaultKeymaps =
+  Map.fromList
+    [ ([K.KChar 'q'], CmdQuit),
+      ([K.KChar 'r', K.KChar 'r'], CmdReload),
+      ([K.KChar '!'], CmdSetCmdline "!"),
+      ([K.KChar '/'], CmdSetCmdline "/"),
+      ([K.KChar 'n'], CmdSearchNext 1),
+      ([K.KChar 'N'], CmdSearchNext (-1)),
+      ([K.KChar ':'], CmdEnterCmdline),
+      ([K.KChar 'l'], CmdOpenSelection),
+      ([K.KChar 'h'], CmdGoBack),
+      ([K.KEnter], CmdOpenSelection),
+      ([K.KBS], CmdGoBack),
+      ([K.KChar 'v'], CmdToggleSelection),
+      ([K.KChar '\t'], CmdToggleSelection),
+      ([K.KChar 'C'], CmdClearSelection),
+      ([K.KChar '~'], CmdChangeDir "~"),
+      ([K.KChar '$'], CmdShell False "$SHELL"),
+      ([K.KChar 'g', K.KChar 'x'], CmdShell False "!xdg-open % >/dev/null 2>&1"),
+      ([K.KChar 'g', K.KChar 'h'], CmdChangeDir "~"),
+      ([K.KChar 'g', K.KChar 'c', K.KChar 'f', K.KChar 'g'], CmdChangeDir "~/.config/daffm"),
+      ([K.KChar 'g', K.KChar 'g'], CmdMove $ MoveTo 0),
+      ([K.KChar 'g', K.KChar 'k'], CmdMove $ MoveTo 0),
+      ([K.KChar 'g', K.KChar 'j'], CmdMove MoveToEnd),
+      ([K.KChar 'G'], CmdMove MoveToEnd)
+    ]
 
 getConfigDir :: IO FilePath
 getConfigDir = getXdgDirectory XdgConfig "daffm"
