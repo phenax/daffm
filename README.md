@@ -1,20 +1,24 @@
 # Daffm
 Dumb as fuck file manager is a minimal tui file manager with the goal of not being a file manager.
-At its core, it only provides a directory browser, providing ways to conviniently run shell commands to manage your files via keybinds and command line input.
+
+At its core, it comes with a directory browser, providing ways to run commands to manage your files via keybinds and command line input. So this way you can get that good feeling in your crotch for following the unix philosophy.
+
 ![screenshot](./media/screenshot.jpg)
 
 ## Install
 ### Nix users
 - This repo can be installed as a nix flake: `github:phenax/daffm#daffm`
 - OR clone the repo and build it: `nix build`
-### Normals (requires cabal)
+### Normals (tarball)
+- Linux: download and install a tarball from [releases](https://github.com/phenax/daffm/releases)
+### Normals (build it yourself. Requires cabal)
 - Clone the repo
-- `make install` to install it on your system (installs in `/usr/local` by default)
+- `make install` to build and install it on your system (installs in `/usr/local` by default)
 - OR `make PREFIX=/install/path install` to install it inside `/install/path` directory
 - `make uninstall` to uninstall it
 
 ## Usage
-Run `man daffm` to see the manual -> [./docs/daffm.md](./docs/daffm.md)
+Run `man daffm` to see the manual. Markdown version: [./docs/daffm.md](./docs/daffm.md)
 
 ## Config
 

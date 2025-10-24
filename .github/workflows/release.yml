@@ -1,0 +1,25 @@
+name: Release
+
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: haskell-actions/setup@v2
+      with:
+        ghc-version: '8.8'
+        cabal-version: '3.0.0.0'
+        cabal-update: true
+    - name: Build tarball
+      run: make dist
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        draft: fales
+        overwrite_files: false
+        files: daffm.tar.gz
