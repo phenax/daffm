@@ -3,13 +3,11 @@
 {-# HLINT ignore "Redundant multi-way if" #-}
 module Daffm.State where
 
-import Brick (suspendAndResume')
 import qualified Brick.Widgets.Edit as Editor
 import qualified Brick.Widgets.List as L
 import Control.Applicative ((<|>))
 import Control.Exception (try)
 import Control.Monad (filterM, forM)
-import qualified Debug.Trace as Debug
 import Daffm.Types
 import Daffm.Utils (trim)
 import Data.List (findIndex, sortBy)

@@ -20,6 +20,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import qualified System.Process as Proc
+import Text.Read (readMaybe)
 
 runCmdline :: AppEvent ()
 runCmdline = do
@@ -53,14 +54,14 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("search", term) -> Just $ CmdSearch $ trim term
       ("search-next", _) -> Just $ CmdSearchNext 1
       ("search-prev", _) -> Just $ CmdSearchNext (-1)
-      ("move", Text.stripPrefix "$" -> Just _) -> Just $ CmdMove MoveToEnd
-      ("move", Text.stripPrefix "+" -> Just inc) -> Just . CmdMove . MoveDown . read $ Text.unpack inc
-      ("move", Text.stripPrefix "-" -> Just inc) -> Just . CmdMove . MoveUp . read $ Text.unpack inc
-      ("move", pos) -> Just . CmdMove . MoveTo . read $ Text.unpack pos
       ("map", Text.break isSpace -> (keysraw, cmdraw)) -> do
         keys <- parseKeySequence keysraw
         cmd' <- parseCommand $ trimStart cmdraw
         pure $ CmdKeymapSet keys cmd'
+      ("move", Text.stripPrefix "$" -> Just _) -> Just $ CmdMove MoveToEnd
+      ("move", Text.stripPrefix "+" -> Just inc) -> Just . CmdMove . MoveDown . read $ Text.unpack inc
+      ("move", Text.stripPrefix "-" -> Just inc) -> Just . CmdMove . MoveUp . read $ Text.unpack inc
+      ("move", readMaybe . Text.unpack -> Just pos) -> Just . CmdMove . MoveTo $ pos
       _ -> Nothing
 
 readCommandLines' :: Text.Text -> IO [Text.Text]

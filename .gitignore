@@ -1,3 +1,5 @@
 result
 dist-newstyle/
 dist-lib/*
+daffm-build/
+daffm.tar.gz

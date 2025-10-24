@@ -33,7 +33,10 @@
             pkg-config
           ];
 
-          devPackages = with pkgs; [ just pandoc ];
+          devPackages = with pkgs; [
+            pandoc
+            gnumake
+          ];
         in {
           haskellProjects.default = {
             inherit projectRoot;
