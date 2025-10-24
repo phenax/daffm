@@ -9,6 +9,11 @@ build-type:      Simple
 synopsis:        Dumb as fuck file manager
 description:     Dumb as fuck file manager
 
+extra-doc-files: docs/daffm.1
+data-files: docs/daffm.1
+install-includes: docs/daffm.1
+extra-source-files: docs/daffm.1
+
 source-repository head
   type:     git
   location: https://github.com/makedaft/daffm.git

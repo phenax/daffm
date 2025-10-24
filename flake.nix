@@ -19,10 +19,13 @@
               ./exe
               ./lib
               ./specs
+              ./docs
               ./daffm.cabal
             ];
           });
-          otherFiles = [];
+          installFiles = [
+            { source = ./docs/daffm.1; target = "$out/share/man/man1/daffm.1"; }
+          ];
           configurationFlags = [
             "--ghc-options=-O2"
           ];
@@ -30,7 +33,7 @@
             pkg-config
           ];
 
-          devPackages = with pkgs; [just];
+          devPackages = with pkgs; [ just pandoc ];
         in {
           haskellProjects.default = {
             inherit projectRoot;
@@ -44,8 +47,10 @@
                 strip = true;
                 custom = drv:
                   (pkgs.haskell.lib.compose.appendConfigureFlags configurationFlags drv).overrideAttrs (old: {
-                    preBuild = ''
-                      ${toString (map (f: ''cp -r ${f.source} ${f.target};'') otherFiles)}
+                    postInstall = ''
+                      ${toString (map (f: ''
+                        install -Dm644 "${f.source}" "${f.target}";
+                      '') installFiles)}
                     '';
                   })
                 ;

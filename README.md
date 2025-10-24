@@ -2,16 +2,17 @@
 Dumb as fuck file manager is a minimal tui file manager with the goal of not being a file manager.
 At its core, it only provides a directory browser, providing ways to conviniently run shell commands to manage your files via keybinds and command line input.
 
-(documentation wip)
-
 ![screenshot](./media/screenshot.jpg)
 
 ## Install
 - Clone the repo and build it: `cabal build daffm` or `nix build`
-- Nix flakes users can also install it as a flake: `github:phenax/daffm#daffm`
+- Nix flakes users can install it as a flake: `github:phenax/daffm#daffm`
 
+## Usage
+Run `man daffm` to see the manual -> [./docs/daffm.md](./docs/daffm.md)
 
 ## Config
+
 Configuration is written in toml. By default it will try to load `$XDG_CONFIG_HOME/daffm/config.toml`.
 You can load config in a different path using `daffm -c <path-to-config>`.
 You can also store alternate configs in `$XDG_CONFIG_HOME/daffm/config.custom-thing.toml` and load it as `daffm -c @custom-thing`.
@@ -67,15 +68,9 @@ m3 = """command-shell echo "<daffm>map <space>3 cd %d" """
 m4 = """command-shell echo "<daffm>map <space>4 cd %d" """
 ```
 
-The substituions (%,%f,%s,%F,%S) are replaced with absolute file paths
-- `%`: File under cursor
-- `%s`: Selected files separated by spaces
-- `%S`: Selected files separated by newlines
-- `%f`: Same as `%s` but if there are no selections, uses file under cursor
-- `%F`: Same as `%S` but if there are no selections, uses file under cursor
-
 
 ## Default keys (no need to define these in config)
+Configuration files loaded override the following defaults
 
 ```toml
 [keymap]
@@ -85,11 +80,17 @@ rr = "reload"
 ":" = "cmdline-enter"
 
 # Search in directory
-"/" = "cmdline-set search "
+"/" = "cmdline-set /"
 n = "search-next"
 N = "search-prev"
 
 # Navigation (j/k for up/down)
+gg = "move 0"
+G = "move $"
+gj = "move 0"
+gk = "move $"
+j = "move +1"
+k = "move -1"
 l = "open"
 h = "back"
 "<cr>" = "open"
@@ -106,9 +107,4 @@ gh = "cd ~" # Go home
 gx = "!xdg-open % >/dev/null 2>&1" # Open externally
 gcfg = "cd ~/.config/daffm" # Open default configurations directory
 ```
-
-
-## Commands
-
-WIP
 

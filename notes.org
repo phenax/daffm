@@ -1,49 +1,15 @@
-** Essentials
-- [X] select multiple files
-- [X] Support multikey bindings
-- [X] Show file permissions
-- [X] Run shell command
-- [X] Reload
-- [X] Preserve cursor position per dir while navigating
-- [X] Command: shell & shell! (alias for !, !!)
-- [X] Command substitution %s:selections
-- [X] Command substitution %d:cwd
-- [X] Command substitution %
-- [X] Command parsing
-- [X] Cmdline must be single line
-- [X] Internal commands?
-- [X] parsing key sequence
-- [X] configuration file (toml?)
-- [X] Error handling
-- [X] Expand ~ to home in internal commands (cd)
-- [X] Show current pending keys in statusline
-- [X] Opener configuration
-- [X] Cli arg parsing (dir arg)
-- [X] Cli arg parsing (-c flag for custom config path)
-- [X] handle on open (for external integrations) (opener in custom config)
-- [X] Given file name, open dir of file with cursor on file
-** Right after
-- [X] chain multiple commands
-- [X] Fix cmd substitution for all command args
-- [X] Command: command-shell special variant of shell that evaluates output as commands
-- [X] Config extend (extend = true will extend config.toml)
-- [X] Finish nvim integration
-- [X] Command: search, search-next, search-prev
-- [X] cd into dir symlinks
-- [X] Command: map
-- [X] shorten/trim from left in header for long paths
-- [ ] Allow escaping % in commands
-- [ ] Cmdline history
-- [ ] Store last directory path (for auto cd in shell)
-- [ ] Preserve back directory when going inside sym link to directories
+- [X] commands: move cursor: move +1, move -1, move 5, move $, move 0
+- [X] rename command-shell to evaluate
+- [ ] Use ls for file listing respecting ansi colors
+- [ ] Generalize cd/opener/back
+- [ ] Allow recursive config extends (@A -> @B -> @C)
+- [ ] allow escaping % in commands
+- [ ] custom commands
+- [ ] cmdline autocompletion
+- [ ] handle permissions errors
 ** Later
-- [ ] Rethink % substituions
-- [ ] cmdline tab completion
-- [ ] theme from config
-- [ ] Fix keymap evaluation with timeout? (If vd is bound, it doesnt evaluate a v binding)
-- [ ] Allow escaping % in commands
-- [ ] Custom commands
-- [ ] aliases for builtin commands
-- [ ] some caching for file list?
-- [ ] copy/move/paste across instances?
+- [ ] Show last cmd in cmdline
+- [ ] preserve back directory when going inside symlink to directories
+- [ ] cmdline history
+- [ ] some caching for file list? (might be good to have for large lists)
 - [ ] watch for changes?
