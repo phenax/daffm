@@ -71,10 +71,10 @@ xclip -selection clipboard -t $(file --mime-type % -bL) -i %
 
 # Poor man's marks (mark directory by creating a binding)
 # m1 marks current directory and <space>1 jumps to that directory
-m1 = """command-shell echo "<daffm>map <space>1 cd %d" """
-m2 = """command-shell echo "<daffm>map <space>2 cd %d" """
-m3 = """command-shell echo "<daffm>map <space>3 cd %d" """
-m4 = """command-shell echo "<daffm>map <space>4 cd %d" """
+m1 = """eval echo "<daffm>map <space>1 cd %d" """
+m2 = """eval echo "<daffm>map <space>2 cd %d" """
+m3 = """eval echo "<daffm>map <space>3 cd %d" """
+m4 = """eval echo "<daffm>map <space>4 cd %d" """
 ```
 
 

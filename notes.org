@@ -1,12 +1,12 @@
 - [X] commands: move cursor: move +1, move -1, move 5, move $, move 0
 - [X] rename command-shell to evaluate
-- [ ] Use ls for file listing respecting ansi colors
-- [ ] Generalize cd/opener/back
 - [ ] Allow recursive config extends (@A -> @B -> @C)
 - [ ] allow escaping % in commands
 - [ ] custom commands
 - [ ] cmdline autocompletion
 - [ ] handle permissions errors
+- [ ] Use ls for file listing respecting ansi colors?
+- [ ] Generalize cd/opener/back?
 ** Later
 - [ ] Show last cmd in cmdline
 - [ ] preserve back directory when going inside symlink to directories

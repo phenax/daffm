@@ -11,8 +11,6 @@ description:     Dumb as fuck file manager
 
 extra-doc-files: docs/daffm.1
 data-files: docs/daffm.1
-install-includes: docs/daffm.1
-extra-source-files: docs/daffm.1
 
 source-repository head
   type:     git
@@ -32,7 +30,7 @@ common common-config
   build-depends:
     array,
     base,
-    brick == 2.10,
+    brick <= 2.10,
     tomland <= 1.3.3.3,
     containers <= 0.8,
     data-default <= 0.8.0.1,
