@@ -80,10 +80,8 @@ loadConfigFile pathM = do
   config <- load cfgPath
   case configExtend config of
     Just path -> do
-      baseCfgPath <- resolveConfigPath $ Just $ Text.unpack path
-      if baseCfgPath == cfgPath
-        then pure config
-        else (config <>) <$> load baseCfgPath
+      baseCfg <- loadConfigFile $ Just (Text.unpack path)
+      pure $ config <> baseCfg
     _ -> pure config
   where
     load = (>>= parseWithDefault) . IO.try . Text.readFile
