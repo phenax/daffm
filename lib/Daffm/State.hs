@@ -17,7 +17,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
-import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, getSymbolicLinkTarget, listDirectory, makeAbsolute, setCurrentDirectory)
+import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, getPermissions, getSymbolicLinkTarget, listDirectory, makeAbsolute, readable, setCurrentDirectory)
 import System.FilePath (joinPath, takeDirectory)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
@@ -29,6 +29,7 @@ mkEmptyAppState :: Configuration -> AppState
 mkEmptyAppState config =
   AppState
     { stateFiles = L.list FocusMain (Vec.fromList []) 1,
+      stateMessage = Nothing,
       stateCmdlineEditor = mkEditor "",
       stateFocusTarget = FocusMain,
       stateListPositionHistory = Map.empty,
@@ -84,17 +85,34 @@ loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = d
         if Posix.isDirectory stat
           then (normalizedDir, Nothing)
           else (textAsString takeDirectory normalizedDir, Just normalizedDir)
-  doesDirectoryExist (Text.unpack dir) >>= \case
-    True -> do
+  isReadable <- readable <$> getPermissions (Text.unpack dir)
+  if isReadable
+    then do
       setCurrentDirectory $ Text.unpack dir
+      newState <- dirToAppState dir targetFilePath
+      doesPathExist (Text.unpack dir') >>= \case
+        True -> pure newState
+        _ -> pure newState {stateMessage = Just $ "No such file or directory: " <> dir'}
+    else do
+      let list = L.list FocusMain (Vec.fromList []) 1
+      pure $ (withNewDir dir list appState) {stateMessage = Just "Unable to read directory"}
+  where
+    withNewDir dir fileList st =
+      st
+        { stateCwd = dir,
+          stateFiles = fileList,
+          stateMessage = Nothing,
+          stateSearchIndex = 0,
+          stateSearchMatches = Vec.empty
+        }
+    dirToAppState dir targetFilePath = do
       files <- listFilesInDir dir
       let prevDirPos = findIndex ((== stateCwd) . filePath) files
       let cachedPos = Map.lookup dir stateListPositionHistory
       let targetFilePos = targetFilePath >>= \target -> findIndex ((== target) . filePath) files
       let pos = fromMaybe 0 (targetFilePos <|> cachedPos <|> prevDirPos)
       let list = L.listMoveTo pos $ L.list FocusMain (Vec.fromList files) 1
-      pure $ appState {stateFiles = list, stateCwd = dir, stateSearchIndex = 0, stateSearchMatches = Vec.empty}
-    False -> pure appState
+      pure $ withNewDir dir list appState
 
 fileTypeFromStatus :: Posix.FileStatus -> FileType
 fileTypeFromStatus s =

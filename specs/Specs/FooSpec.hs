@@ -52,7 +52,8 @@ test = do
   describe "parseCommand" $ do
     context "when given an invalid command" $ do
       it "returns Nothing" $ do
-        parseCommand "aklsdjijm" `shouldBe` Nothing
+        parseCommand "foobar arg1 arg2" `shouldBe` Just (CmdCustom "foobar" "arg1 arg2")
+
     context "when empty command" $ do
       it "returns Nothing" $ do
         parseCommand "" `shouldBe` Nothing

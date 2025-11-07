@@ -18,9 +18,10 @@ import Text.Printf (printf)
 appView :: AppState -> [Widget FocusTarget]
 appView appState@(AppState {stateFiles}) = [ui]
   where
-    ui = vBox [vLimit 1 header, box, vLimit 1 cmdline]
+    ui = vBox [vLimit 1 header, box, message, vLimit 1 cmdline]
     header = headerView appState
     cmdline = cmdlineView appState
+    message = messageView appState
     box = L.renderListWithIndex (fileItemView appState) True stateFiles
 
 hFixed :: Int -> Widget n -> Widget n
@@ -100,6 +101,10 @@ symTargetView :: Maybe FileType -> Maybe Text.Text -> Widget n
 symTargetView _ Nothing = withAttr invalidLinkAttr $ txt "<none>"
 symTargetView Nothing (Just target) = withAttr invalidLinkAttr $ txt target
 symTargetView _ (Just target) = txt target
+
+messageView :: AppState -> Widget FocusTarget
+messageView (AppState {stateMessage = Just message}) = txt message
+messageView _ = emptyWidget
 
 cmdlineView :: AppState -> Widget FocusTarget
 cmdlineView (AppState {stateFocusTarget = FocusCmdline, stateCmdlineEditor}) =

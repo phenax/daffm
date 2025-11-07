@@ -43,6 +43,7 @@ data AppState = AppState
     stateCustomCommands :: Map.Map Text.Text Command,
     stateFileSelections :: Set.Set FilePathText,
     stateFiles :: L.List FocusTarget FileInfo,
+    stateMessage :: Maybe Text.Text,
     stateFocusTarget :: FocusTarget,
     stateKeyMap :: Keymap,
     stateKeySequence :: KeySequence,

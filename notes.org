@@ -3,14 +3,14 @@
 - [X] Allow recursive config extends (@A -> @B -> @C)
 - [X] custom commands
 - [X] fix problems with substitutions (maybe switch to env vars?)
+- [X] handle permissions errors
 - [ ] allow escaping % in commands
 - [ ] escape % in file paths while substituting
 - [ ] allow updating selection list (:selection-add, :selection-delete)
 - [ ] cmdline autocompletion
-- [ ] handle permissions errors
 - [ ] Use ls for file listing respecting ansi colors?
 - [ ] Generalize cd/opener/back?
-- [ ] Show error messages (invalid commands/shell errors)
+- [X] Show error messages (invalid commands/shell errors)
 ** Later
 - [ ] cross instance selections? (just override keys?)
 - [ ] Show last cmd in cmdline

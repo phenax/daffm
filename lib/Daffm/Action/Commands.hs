@@ -62,6 +62,7 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("move", Text.stripPrefix "+" -> Just inc) -> Just . CmdMove . MoveDown . read $ Text.unpack inc
       ("move", Text.stripPrefix "-" -> Just inc) -> Just . CmdMove . MoveUp . read $ Text.unpack inc
       ("move", readMaybe . Text.unpack -> Just pos) -> Just . CmdMove . MoveTo $ pos
+      ("", _) -> Nothing
       (cmd', args) -> Just $ CmdCustom cmd' args
 
 readCommandLines :: Text.Text -> IO [Text.Text]
@@ -93,7 +94,8 @@ processCommand (CmdCommandShell cmd) args = do
       processCommand (fromMaybe CmdNoop (parseCommand cmd')) args
     runIfCmd _ = pure ()
 processCommand CmdQuit _args = M.halt
-processCommand (CmdSetCmdline txt) args = enterCmdline >> cmdSubstitutions (argSubst args txt) >>= setCmdlineText
+processCommand (CmdSetCmdline txt) args =
+  enterCmdline >> cmdSubstitutions (argSubst args txt) >>= setCmdlineText
 processCommand CmdEnterCmdline _args = enterCmdline
 processCommand CmdLeaveCmdline _args = leaveCmdline
 processCommand CmdOpenSelection _args = openSelectedFile
@@ -121,11 +123,12 @@ processCommand (CmdCustom cmd args) _ = do
   myCmd <- gets $ Map.lookup cmd . stateCustomCommands
   case myCmd of
     Just command -> processCommand command args
-    Nothing -> pure ()
+    Nothing -> modify (\st -> st { stateMessage = Just $ "Invalid command " <> cmd })
 processCommand CmdNoop _ = pure ()
 
 evaluateCommand :: Text.Text -> AppEvent ()
-evaluateCommand cmdtxt =
+evaluateCommand cmdtxt = do
+  modify (\st -> st { stateMessage = Nothing })
   case parseCommand cmdtxt of
     Just cmd -> processCommand cmd ""
     Nothing -> pure ()

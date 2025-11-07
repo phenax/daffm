@@ -50,13 +50,13 @@ xclip -selection clipboard -t $(file --mime-type % -bL) -i %
 "\\x7" = "!!7z x %f"
 "\\xt" = "!!tar xzf %f"
 "\\xr" = "!!unrar x %f"
-"\\wi" = "!!wine %"
-"<space>p" = ["!clear", "preview"]
+"<space>p" = "preview"
 
 [commands]
-preview = """!!
-file="%args"
+preview = """shell!
+file='%args'
 if [ -z "$file" ]; then file=%; fi
+clear;
 case "$file" in
   *.bmp|*.jpg|*.jpeg|*.png|*.xpm|*.webp|*.gif) chafa -f kitty $file ;;
   *.wav|*.mp3|*.flac|*.m4a|*.wma|*.ac3|*.og[agx]|*.opus|*.flac)
@@ -77,6 +77,12 @@ case "$file" in
   *.rar) unrar l $file ;;
   *.7z) 7z l $file ;;
   *.o) nm $file | less ;;
-  *) bat --color always $file || cat $file ;;
+  *)
+    if isutf8 -q "$file"; then
+      bat --color always $file || cat $file
+    else
+      mediainfo "$file"
+    fi
+  ;;
 esac
 """
