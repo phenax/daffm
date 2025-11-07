@@ -40,6 +40,7 @@ data FocusTarget = FocusCmdline | FocusMain deriving (Show, Eq, Ord)
 data AppState = AppState
   { stateCmdlineEditor :: CmdlineEditor,
     stateCwd :: FilePathText,
+    stateCustomCommands :: Map.Map Text.Text Command,
     stateFileSelections :: Set.Set FilePathText,
     stateFiles :: L.List FocusTarget FileInfo,
     stateFocusTarget :: FocusTarget,
@@ -52,6 +53,8 @@ data AppState = AppState
     stateSearchIndex :: Int
   }
   deriving (Show)
+
+type CustomArgs = Text.Text
 
 type AppEvent = EventM FocusTarget AppState
 
@@ -81,6 +84,7 @@ data Command
   | CmdSearchNext Int
   | CmdKeymapSet [Key] Command
   | CmdMove MoveInc
+  | CmdCustom Text.Text CustomArgs
   | CmdNoop
   deriving (Show, Eq)
 
@@ -94,7 +98,7 @@ data Configuration = Configuration
   { configKeymap :: !Keymap,
     configOpener :: !(Maybe Text.Text),
     configExtend :: !(Maybe Text.Text),
-    configTheme :: !(Map.Map Text.Text Text.Text)
+    configCommands :: !(Map.Map Text.Text Command)
   }
   deriving (Show)
 
@@ -103,7 +107,7 @@ instance Semigroup Configuration where
     a
       { configKeymap = configKeymap a <> configKeymap b,
         configOpener = configOpener a <|> configOpener b,
-        configTheme = configTheme a <> configTheme b
+        configCommands = configCommands a <> configCommands b
       }
 
 data Args = Args

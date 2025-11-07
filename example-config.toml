@@ -1,0 +1,82 @@
+opener = """
+echo "%F" | while IFS= read file; do
+  case "$(file --mime-type "$file" -bL)" in
+    image/*) setsid -f sxiv "$file" >/dev/null 2>&1 ;;
+    video/*|image/gif) setsid -f mpv "$file" >/dev/null 2>&1 ;;
+    application/pdf) setsid -f zathura "$file" >/dev/null 2>&1 ;;
+    *) $EDITOR "$file" ;;
+  esac
+done;
+"""
+
+[keymap]
+md = "cmdline-set !mkdir -p "
+mf = "cmdline-set !touch "
+cl = ["cmdline-set !ln -s %f ", "selection-clear"]
+rn = ["!!clear; echo '%F' | vidir -v -", "selection-clear"]
+dd = "!clear; echo '%F'; rm -rfIv %f"
+sdd = "!clear; echo '%F'; sudo rm -rfIv %f"
+cc = ["!!clear; echo 'Duplicated %'; cp -r % %.dup", "selection-clear"]
+cp = ["!!cp -irv %s -t %d", "selection-clear"]
+mv = ["!!mv -iv %s -t %d", "selection-clear"]
+
+gdl = "cd ~/Downloads"
+gdc = "cd ~/Documents"
+gp = "cd ~/Pictures"
+gsc = "cd ~/Pictures/screenshots"
+gdp = "cd ~/dump"
+gmnt = "cd /run/media/imsohexy"
+gdv = "cd ~/dev/projects"
+
+# Clipboard
+yy = """shell
+relpath=$(realpath -s --relative-to="${DAFFM_PATH_RELATIVE_TO:-$PWD}" %)
+echo -n "$relpath" | xclip -selection clipboard
+"""
+YY = "!echo -n % | xclip -selection clipboard"
+yf = """shell
+xclip -selection clipboard -t $(file --mime-type % -bL) -i %
+"""
+
+# Mark directories
+"m1" = """eval echo "<daffm>map <space>1 cd %d" """
+"m2" = """eval echo "<daffm>map <space>2 cd %d" """
+"m3" = """eval echo "<daffm>map <space>3 cd %d" """
+"m4" = """eval echo "<daffm>map <space>4 cd %d" """
+
+# Alt openers
+"<space>du" = "!!dua ."
+"\\xz" = "!!unzip %f"
+"\\x7" = "!!7z x %f"
+"\\xt" = "!!tar xzf %f"
+"\\xr" = "!!unrar x %f"
+"\\wi" = "!!wine %"
+"<space>p" = ["!clear", "preview"]
+
+[commands]
+preview = """!!
+file="%args"
+if [ -z "$file" ]; then file=%; fi
+case "$file" in
+  *.bmp|*.jpg|*.jpeg|*.png|*.xpm|*.webp|*.gif) chafa -f kitty $file ;;
+  *.wav|*.mp3|*.flac|*.m4a|*.wma|*.ac3|*.og[agx]|*.opus|*.flac)
+    mediainfo $file
+  ;;
+  *.avi|*.mp4|*.ogv|*.mkv|*.mpg|*.mpeg|*.m2v|*.mov|*.webm|*.mts|*.m4v)
+    mediainfo $file
+  ;;
+  *.pdf) pdftotext $file - | less ;;
+  *.docx) docx2txt $file - | less ;;
+  *.md|*.org) glow -s dark -p $file ;;
+  *.tgz|*.tar.gz) tar tzf $file ;;
+  *.tar.bz2|*.tbz2) tar tjf $file ;;
+  *.tar.bz2|*.tbz2) tar tjf $file ;;
+  *.tar.txz|*.txz) xz --list $file ;;
+  *.tar) tar tf $file ;;
+  *.zip|*.jar|*.war|*.ear|*.oxt) unzip -l $file ;;
+  *.rar) unrar l $file ;;
+  *.7z) 7z l $file ;;
+  *.o) nm $file | less ;;
+  *) bat --color always $file || cat $file ;;
+esac
+"""

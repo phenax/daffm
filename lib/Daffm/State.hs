@@ -39,6 +39,7 @@ mkEmptyAppState config =
       stateKeySequence = [],
       stateSearchTerm = Nothing,
       stateSearchMatches = Vec.empty,
+      stateCustomCommands = configCommands config,
       stateSearchIndex = 0
     }
 

@@ -26,7 +26,7 @@ defaultConfiguration =
   Configuration
     { configKeymap = defaultKeymaps,
       configOpener = Nothing,
-      configTheme = Map.empty,
+      configCommands = Map.empty,
       configExtend = Nothing
     }
 
@@ -102,7 +102,7 @@ configurationCodec =
     <$> (keymapCodec "keymap" .= configKeymap)
     <*> (openerCodec "opener" .= configOpener)
     <*> (extendCodec "extend" .= configExtend)
-    <*> pure Map.empty .= configTheme
+    <*> (commandsCodec "commands" .= configCommands)
   where
     openerCodec = Toml.dioptional . Toml.text
     extendCodec = Toml.dioptional . Toml.text
@@ -115,6 +115,14 @@ keymapCodec = Toml.dimap (const Map.empty) toKeymap . keymapRawCodec
     toKeys = fromMaybe [] . parseKeySequence . stripQuotes
     toCmd = fromMaybe CmdNoop . parseCommand
     stripQuotes txt = fromMaybe txt (Text.stripPrefix "\"" txt >>= Text.stripSuffix "\"")
+    commandCodec k = cmdCodec k <|> cmdChainCodec k
+    cmdCodec = Toml.dimap (const "") toCmd . Toml.text
+    cmdChainCodec = Toml.dimap (const []) (CmdChain . map toCmd) . Toml.arrayOf Toml._Text
+
+commandsCodec :: Toml.Key -> Toml.TomlCodec (Map.Map Text.Text Command)
+commandsCodec = Toml.tableMap Toml._KeyText commandCodec
+  where
+    toCmd = fromMaybe CmdNoop . parseCommand
     commandCodec k = cmdCodec k <|> cmdChainCodec k
     cmdCodec = Toml.dimap (const "") toCmd . Toml.text
     cmdChainCodec = Toml.dimap (const []) (CmdChain . map toCmd) . Toml.arrayOf Toml._Text

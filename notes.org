@@ -1,9 +1,10 @@
 - [X] commands: move cursor: move +1, move -1, move 5, move $, move 0
 - [X] rename command-shell to evaluate
 - [X] Allow recursive config extends (@A -> @B -> @C)
-- [ ] custom commands
+- [X] custom commands
 - [X] fix problems with substitutions (maybe switch to env vars?)
 - [ ] allow escaping % in commands
+- [ ] escape % in file paths while substituting
 - [ ] allow updating selection list (:selection-add, :selection-delete)
 - [ ] cmdline autocompletion
 - [ ] handle permissions errors

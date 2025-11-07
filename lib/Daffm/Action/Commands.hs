@@ -62,10 +62,10 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("move", Text.stripPrefix "+" -> Just inc) -> Just . CmdMove . MoveDown . read $ Text.unpack inc
       ("move", Text.stripPrefix "-" -> Just inc) -> Just . CmdMove . MoveUp . read $ Text.unpack inc
       ("move", readMaybe . Text.unpack -> Just pos) -> Just . CmdMove . MoveTo $ pos
-      _ -> Nothing
+      (cmd', args) -> Just $ CmdCustom cmd' args
 
-readCommandLines' :: Text.Text -> IO [Text.Text]
-readCommandLines' cmd = do
+readCommandLines :: Text.Text -> IO [Text.Text]
+readCommandLines cmd = do
   Proc.withCreateProcess
     (Proc.shell $ Text.unpack cmd)
       { Proc.delegate_ctlc = True,
@@ -77,47 +77,55 @@ readCommandLines' cmd = do
       _ <- Proc.waitForProcess p
       Text.lines <$> maybe (pure "") Text.hGetContents stdout
 
-processCommand :: Command -> AppEvent ()
-processCommand (CmdShell waitForKey cmd) = do
-  cmdSubstitutions cmd >>= suspendAndRunShellCommand waitForKey
+argSubst :: Text.Text -> Text.Text -> Text.Text
+argSubst = Text.replace "%args"
+
+processCommand :: Command -> CustomArgs -> AppEvent ()
+processCommand (CmdShell waitForKey cmd) args = do
+  cmdSubstitutions (argSubst args cmd) >>= suspendAndRunShellCommand waitForKey
   reloadDir
-processCommand (CmdCommandShell cmd) = do
-  stdout <- cmdSubstitutions cmd >>= liftIO . readCommandLines'
+processCommand (CmdCommandShell cmd) args = do
+  stdout <- cmdSubstitutions (argSubst args cmd) >>= liftIO . readCommandLines
   forM_ stdout runIfCmd
   reloadDir
   where
     runIfCmd (Text.stripPrefix "<daffm>" -> Just cmd') =
-      processCommand $ fromMaybe CmdNoop (parseCommand cmd')
+      processCommand (fromMaybe CmdNoop (parseCommand cmd')) args
     runIfCmd _ = pure ()
-processCommand CmdQuit = M.halt
-processCommand (CmdSetCmdline txt) = enterCmdline >> cmdSubstitutions txt >>= setCmdlineText
-processCommand CmdEnterCmdline = enterCmdline
-processCommand CmdLeaveCmdline = leaveCmdline
-processCommand CmdOpenSelection = openSelectedFile
-processCommand (CmdChangeDir dir) = cmdSubstitutions dir >>= changeDir
-processCommand CmdReload = reloadDir
-processCommand CmdToggleSelection = toggleCurrentFileSelection
-processCommand CmdClearSelection = clearFileSelections
-processCommand CmdGoBack = goBackToParentDir
-processCommand (CmdChain chain) = forM_ chain processCommand
-processCommand (CmdSearch term) = setSearchTerm term >> applySearch >> nextSearchMatch
-processCommand (CmdSearchNext change) = updateSearchIndex (+ change) >> nextSearchMatch
-processCommand (CmdKeymapSet keys command) =
+processCommand CmdQuit _args = M.halt
+processCommand (CmdSetCmdline txt) args = enterCmdline >> cmdSubstitutions (argSubst args txt) >>= setCmdlineText
+processCommand CmdEnterCmdline _args = enterCmdline
+processCommand CmdLeaveCmdline _args = leaveCmdline
+processCommand CmdOpenSelection _args = openSelectedFile
+processCommand (CmdChangeDir dir) args = cmdSubstitutions (argSubst args dir) >>= changeDir
+processCommand CmdReload _args = reloadDir
+processCommand CmdToggleSelection _args = toggleCurrentFileSelection
+processCommand CmdClearSelection _args = clearFileSelections
+processCommand CmdGoBack _ = goBackToParentDir
+processCommand (CmdChain chain) args = forM_ chain (`processCommand` args)
+processCommand (CmdSearch term) _ = setSearchTerm term >> applySearch >> nextSearchMatch
+processCommand (CmdSearchNext change) _ = updateSearchIndex (+ change) >> nextSearchMatch
+processCommand (CmdKeymapSet keys command) _ =
   modify $ \st -> st {stateKeyMap = Map.insert keys command $ stateKeyMap st}
-processCommand (CmdMove move) = moveCursor $ toUpdater move
+processCommand (CmdMove move) _ = moveCursor $ toUpdater move
   where
     toUpdater MoveToEnd = L.listMoveToEnd
     toUpdater (MoveTo pos) = L.listMoveTo pos
-    toUpdater (MoveUp inc) = L.listMoveBy $ - inc
+    toUpdater (MoveUp inc) = L.listMoveBy $ -inc
     toUpdater (MoveDown inc) = L.listMoveBy inc
     moveCursor :: (L.List FocusTarget FileInfo -> L.List FocusTarget FileInfo) -> AppEvent ()
     moveCursor updater = do
       files <- gets $ updater . stateFiles
       modify $ \st -> st {stateFiles = files}
-processCommand CmdNoop = pure ()
+processCommand (CmdCustom cmd args) _ = do
+  myCmd <- gets $ Map.lookup cmd . stateCustomCommands
+  case myCmd of
+    Just command -> processCommand command args
+    Nothing -> pure ()
+processCommand CmdNoop _ = pure ()
 
 evaluateCommand :: Text.Text -> AppEvent ()
 evaluateCommand cmdtxt =
   case parseCommand cmdtxt of
-    Just cmd -> processCommand cmd
+    Just cmd -> processCommand cmd ""
     Nothing -> pure ()

@@ -11,7 +11,7 @@ processKeySequence = do
   let match = matchKeySequence stateKeyMap stateKeySequence
   case match of
     MatchSuccess cmd -> do
-      processCommand cmd
+      processCommand cmd ""
       modify (\st -> st {stateKeySequence = []})
     MatchPartial -> pure ()
     MatchFailure -> do
