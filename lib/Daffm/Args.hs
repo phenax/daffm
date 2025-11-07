@@ -9,7 +9,7 @@ parseArgs rawArgs = case parsedArgs of
   Left e -> throwIO $ userError e
   Right v -> pure v
   where
-    parsedArgs = parse rawArgs (Args {argsDirOrFile = Nothing, argsConfigFile = Nothing, argsHelp = False})
+    parsedArgs = parse rawArgs $ Args {argsDirOrFile = Nothing, argsConfigFile = Nothing, argsHelp = False}
     parse :: [String] -> Args -> Either String Args
     parse [] args = Right args
     parse ("-h" : _) args = Right $ args {argsHelp = True}

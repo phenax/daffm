@@ -10,11 +10,13 @@ import Control.Monad (void)
 import Control.Monad.State (MonadIO (liftIO), MonadState, get, gets, modify, put)
 import Daffm.State
 import Daffm.Types (AppEvent, AppState (..), FileInfo (..), FilePathText, FileType (..))
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Vector as Vec
 import System.Directory (getHomeDirectory)
+import System.Environment (getEnvironment)
 import qualified System.Exit as Proc
 import System.FilePath (takeDirectory)
 import qualified System.Process as Proc
@@ -54,7 +56,7 @@ openSelectedFile = do
 cmdSubstitutions :: Text.Text -> AppEvent Text.Text
 cmdSubstitutions cmd = gets (`substitute` cmd)
   where
-    escape = (\s -> "'" <> s <> "'") . Text.replace "'" "\\'"
+    escape = (\s -> "'" <> s <> "'") . Text.replace "'" "'\\''"
     substitute (AppState {stateFiles, stateCwd, stateFileSelections}) =
       Text.replace "%" (escape cursorFile)
         . Text.replace "%d" (escape stateCwd)
@@ -72,18 +74,19 @@ cmdSubstitutions cmd = gets (`substitute` cmd)
 -- When exit code is non-zero, it will print it and prompt for key press regardless of waitForKey
 suspendAndRunShellCommand :: Bool -> Text.Text -> AppEvent ()
 suspendAndRunShellCommand waitForKey cmd = do
-  suspendAndResume' $
-    shellCommand (Text.unpack cmd) >>= \case
+  suspendAndResume' $ do
+    shellCommand (Text.unpack cmd) Map.empty >>= \case
       Proc.ExitFailure code -> do
         putStrLn $ "Process exited with " <> show code
         putStrLn "Press any key to continue" >> void getChar
       _ | waitForKey -> putStrLn "Press any key to continue" >> void getChar
       _ -> pure ()
 
-shellCommand :: String -> IO Proc.ExitCode
-shellCommand cmd = do
+shellCommand :: String -> Map.Map String String -> IO Proc.ExitCode
+shellCommand cmd env = do
+  currentEnv <- getEnvironment
   Proc.withCreateProcess
-    (Proc.shell cmd) {Proc.delegate_ctlc = True}
+    (Proc.shell cmd) {Proc.delegate_ctlc = True, Proc.env = Just $ currentEnv ++ Map.toList env}
     $ \_ _ _ p -> Proc.waitForProcess p
 
 currentFile :: AppEvent (Maybe FileInfo)

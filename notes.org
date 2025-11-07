@@ -1,14 +1,17 @@
 - [X] commands: move cursor: move +1, move -1, move 5, move $, move 0
 - [X] rename command-shell to evaluate
 - [X] Allow recursive config extends (@A -> @B -> @C)
-- [ ] allow escaping % in commands
-- [ ] fix problems with substitutions (maybe switch to env vars?)
 - [ ] custom commands
+- [X] fix problems with substitutions (maybe switch to env vars?)
+- [ ] allow escaping % in commands
+- [ ] allow updating selection list (:selection-add, :selection-delete)
 - [ ] cmdline autocompletion
 - [ ] handle permissions errors
 - [ ] Use ls for file listing respecting ansi colors?
 - [ ] Generalize cd/opener/back?
+- [ ] Show error messages (invalid commands/shell errors)
 ** Later
+- [ ] cross instance selections? (just override keys?)
 - [ ] Show last cmd in cmdline
 - [ ] preserve back directory when going inside symlink to directories
 - [ ] cmdline history
