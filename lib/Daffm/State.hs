@@ -17,7 +17,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
-import System.Directory (doesDirectoryExist, doesPathExist, getCurrentDirectory, getHomeDirectory, getPermissions, getSymbolicLinkTarget, listDirectory, makeAbsolute, readable, setCurrentDirectory)
+import System.Directory (doesPathExist, getCurrentDirectory, getHomeDirectory, getPermissions, getSymbolicLinkTarget, listDirectory, makeAbsolute, readable, setCurrentDirectory)
 import System.FilePath (joinPath, takeDirectory)
 import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix

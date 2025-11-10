@@ -99,6 +99,14 @@ toggleCurrentFileSelection = do
     Nothing -> pure ()
   moveCurrent 1
 
+addFileSelection :: FilePathText -> AppEvent ()
+addFileSelection path = do
+  modify $ \st -> st {stateFileSelections = Set.insert path . stateFileSelections $ st}
+
+removeFileSelection :: FilePathText -> AppEvent ()
+removeFileSelection path = do
+  modify $ \st -> st {stateFileSelections = Set.delete path . stateFileSelections $ st}
+
 clearFileSelections :: AppEvent ()
 clearFileSelections =
   modify $ \st -> st {stateFileSelections = Set.empty}

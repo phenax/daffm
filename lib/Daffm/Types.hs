@@ -74,11 +74,13 @@ data Command
   | CmdSetCmdline Text.Text
   | CmdEnterCmdline
   | CmdLeaveCmdline
-  | CmdOpenSelection
+  | CmdSelectionOpen
   | CmdChangeDir Text.Text
   | CmdReload
-  | CmdToggleSelection
-  | CmdClearSelection
+  | CmdSelectionToggle
+  | CmdSelectionAdd Text.Text
+  | CmdSelectionRemove Text.Text
+  | CmdSelectionClear
   | CmdGoBack
   | CmdChain [Command]
   | CmdSearch Text.Text
@@ -117,4 +119,3 @@ data Args = Args
     argsHelp :: Bool
   }
   deriving (Show)
-

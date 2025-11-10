@@ -4,13 +4,14 @@
 - [X] custom commands
 - [X] fix problems with substitutions (maybe switch to env vars?)
 - [X] handle permissions errors
+- [X] Show error messages (invalid commands/shell errors)
+- [ ] fix issue with pathExists check for ~ expansion
 - [ ] allow escaping % in commands
 - [ ] escape % in file paths while substituting
 - [ ] allow updating selection list (:selection-add, :selection-delete)
 - [ ] cmdline autocompletion
 - [ ] Use ls for file listing respecting ansi colors?
 - [ ] Generalize cd/opener/back?
-- [X] Show error messages (invalid commands/shell errors)
 ** Later
 - [ ] cross instance selections? (just override keys?)
 - [ ] Show last cmd in cmdline

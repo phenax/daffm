@@ -42,15 +42,17 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("shell", cmd') -> Just $ CmdShell False cmd'
       ("eval", cmd') -> Just $ CmdCommandShell cmd'
       ("back", _) -> Just CmdGoBack
-      ("open", _) -> Just CmdOpenSelection
+      ("open", _) -> Just CmdSelectionOpen
       ("reload", _) -> Just CmdReload
       ("cd", dir) -> Just $ CmdChangeDir dir
       ("noop", _) -> Just CmdNoop
       ("cmdline-enter", _) -> Just CmdEnterCmdline
       ("cmdline-leave", _) -> Just CmdLeaveCmdline
       ("cmdline-set", txt) -> Just $ CmdSetCmdline txt
-      ("selection-toggle", _) -> Just CmdToggleSelection
-      ("selection-clear", _) -> Just CmdClearSelection
+      ("selection-toggle", _) -> Just CmdSelectionToggle
+      ("selection-clear", _) -> Just CmdSelectionClear
+      ("selection-add", file) -> Just $ CmdSelectionAdd file
+      ("selection-remove", file) -> Just $ CmdSelectionRemove file
       ("search", term) -> Just $ CmdSearch $ trim term
       ("search-next", _) -> Just $ CmdSearchNext 1
       ("search-prev", _) -> Just $ CmdSearchNext (-1)
@@ -98,11 +100,13 @@ processCommand (CmdSetCmdline txt) args =
   enterCmdline >> cmdSubstitutions (argSubst args txt) >>= setCmdlineText
 processCommand CmdEnterCmdline _args = enterCmdline
 processCommand CmdLeaveCmdline _args = leaveCmdline
-processCommand CmdOpenSelection _args = openSelectedFile
+processCommand CmdSelectionOpen _args = openSelectedFile
 processCommand (CmdChangeDir dir) args = cmdSubstitutions (argSubst args dir) >>= changeDir
 processCommand CmdReload _args = reloadDir
-processCommand CmdToggleSelection _args = toggleCurrentFileSelection
-processCommand CmdClearSelection _args = clearFileSelections
+processCommand CmdSelectionToggle _args = toggleCurrentFileSelection
+processCommand CmdSelectionClear _args = clearFileSelections
+processCommand (CmdSelectionAdd file) _args = addFileSelection $ trim file -- TODO: Subst
+processCommand (CmdSelectionRemove file) _args = removeFileSelection $ trim file -- TODO: Subst
 processCommand CmdGoBack _ = goBackToParentDir
 processCommand (CmdChain chain) args = forM_ chain (`processCommand` args)
 processCommand (CmdSearch term) _ = setSearchTerm term >> applySearch >> nextSearchMatch
@@ -123,12 +127,12 @@ processCommand (CmdCustom cmd args) _ = do
   myCmd <- gets $ Map.lookup cmd . stateCustomCommands
   case myCmd of
     Just command -> processCommand command args
-    Nothing -> modify (\st -> st { stateMessage = Just $ "Invalid command " <> cmd })
+    Nothing -> modify (\st -> st {stateMessage = Just $ "Invalid command " <> cmd})
 processCommand CmdNoop _ = pure ()
 
 evaluateCommand :: Text.Text -> AppEvent ()
 evaluateCommand cmdtxt = do
-  modify (\st -> st { stateMessage = Nothing })
+  modify (\st -> st {stateMessage = Nothing})
   case parseCommand cmdtxt of
     Just cmd -> processCommand cmd ""
     Nothing -> pure ()
