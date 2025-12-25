@@ -5,7 +5,7 @@
 - [X] fix problems with substitutions (maybe switch to env vars?)
 - [X] handle permissions errors
 - [X] Show error messages (invalid commands/shell errors)
-- [ ] fix issue with pathExists check for ~ expansion
+- [X] fix issue with pathExists check for ~ expansion
 - [ ] add substution for last directory (or automark on cd)
 - [ ] allow escaping % in commands
 - [ ] escape % in file paths while substituting

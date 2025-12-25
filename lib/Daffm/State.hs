@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Redundant multi-way if" #-}
+{-# HLINT ignore "Use if" #-}
 module Daffm.State where
 
 import qualified Brick.Widgets.Edit as Editor
@@ -19,8 +20,8 @@ import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import System.Directory (doesPathExist, getCurrentDirectory, getHomeDirectory, getPermissions, getSymbolicLinkTarget, listDirectory, makeAbsolute, readable, setCurrentDirectory)
 import System.FilePath (joinPath, takeDirectory)
-import qualified System.PosixCompat as Posix
 import qualified System.Posix.User as Posix
+import qualified System.PosixCompat as Posix
 
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
 mkEditor = Editor.editor FocusCmdline (Just 1)
@@ -59,10 +60,10 @@ normalizePath (Text.stripPrefix "~/" -> (Just rest)) = do
   pure . Text.pack . joinPath $ [home, Text.unpack rest]
 normalizePath dir = Text.pack <$> makeAbsolute (Text.unpack dir)
 
-withCwdFallback :: FilePathText -> IO FilePathText
+withCwdFallback :: FilePathText -> IO (Bool, FilePathText)
 withCwdFallback path = do
   exists <- doesPathExist $ Text.unpack path
-  if exists then pure path else Text.pack <$> getCurrentDirectory
+  if exists then pure (True, path) else (False,) . Text.pack <$> getCurrentDirectory
 
 stripQuotes :: Text.Text -> Text.Text
 stripQuotes txt = fromMaybe txt (double <|> single)
@@ -79,7 +80,7 @@ textAsString f = Text.pack . f . Text.unpack
 
 loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
-  normalizedDir <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir' >>= withCwdFallback
+  (pathExists, normalizedDir) <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir' >>= withCwdFallback
   stat <- Posix.getFileStatus $ Text.unpack normalizedDir
   let (dir, targetFilePath) =
         if Posix.isDirectory stat
@@ -90,9 +91,9 @@ loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = d
     then do
       setCurrentDirectory $ Text.unpack dir
       newState <- dirToAppState dir targetFilePath
-      doesPathExist (Text.unpack dir') >>= \case
-        True -> pure newState
-        _ -> pure newState {stateMessage = Just $ "No such file or directory: " <> dir'}
+      pure $ case pathExists of
+        True -> newState
+        _ -> newState {stateMessage = Just $ "No such file or directory: " <> dir'}
     else do
       let list = L.list FocusMain (Vec.fromList []) 1
       pure $ (withNewDir dir list appState) {stateMessage = Just "Unable to read directory"}
