@@ -44,21 +44,23 @@ fileListView appState@(AppState {stateFiles}) =
   L.renderListWithIndex (fileItemView appState) True stateFiles
 
 fileItemView :: AppState -> Int -> Bool -> FileInfo -> Widget FocusTarget
-fileItemView appState index sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode, fileUser, fileGroup}) =
+fileItemView appState index sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
   hBox
     [ hFixed 2 fileSelectionView,
       hFixed 1 $ fileTypeView fileType,
       hFixed 10 $ fileModeView fileMode,
-      hFixed 16 $ fileOwnerView fileUser fileGroup,
+      hFixed (maxOwnerSize + 1) $ fileOwnerView fileInfo,
       hFixed 7 $ fileSizeView fileSize,
       fileNameView sel fileInfo,
       searchMatchIndicatorView
     ]
   where
+    maxOwnerSize = Vec.maximum . Vec.map (Text.length . ownerInfo) . L.listElements $ stateFiles appState
+    ownerInfo (FileInfo {fileUser = user, fileGroup = group}) = user <> ":" <> group
     fileSizeView = txt . prettyFileSize . fromIntegral
     fileTypeView = withAttr fileTypeAttr . txt . showFileType
     fileModeView = withAttr fileModeAttr . txt . showFileMode
-    fileOwnerView user group = withAttr fileOwnerAttr . txt $ user <> ":" <> group
+    fileOwnerView = withAttr fileOwnerAttr . txt . ownerInfo
     fileSelectionView = txt $ if Set.member filePath $ stateFileSelections appState then ">" else " "
     searchMatchIndicatorView
       | index `Vec.elem` stateSearchMatches appState = padLeft (Pad 1) $ withAttr searchMarchAttr $ txt "*"

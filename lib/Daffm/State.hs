@@ -11,6 +11,7 @@ import Control.Exception (try)
 import Control.Monad (filterM, forM)
 import Daffm.Types
 import Daffm.Utils (trim)
+import Data.Either (fromRight)
 import Data.List (findIndex, sortBy)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromMaybe)
@@ -147,16 +148,16 @@ getFileInfo name = do
     if
       | Posix.isSymbolicLink stat -> Just . Text.pack <$> getSymbolicLinkTarget path
       | otherwise -> pure Nothing
-  user <- Posix.getUserEntryForID $ Posix.fileOwner stat
-  group <- Posix.getGroupEntryForID $ Posix.fileGroup stat
+  user <- either2Maybe <$> try (Posix.getUserEntryForID $ Posix.fileOwner stat)
+  group <- either2Maybe <$> try (Posix.getGroupEntryForID $ Posix.fileGroup stat)
   pure $
     FileInfo
       { filePath = Text.pack path,
         fileName = name,
         fileSize = Posix.fileSize stat,
         fileMode = Posix.fileMode stat,
-        fileUser = Text.pack . Posix.userName $ user,
-        fileGroup = Text.pack . Posix.groupName $ group,
+        fileUser = maybe "?" (Text.pack . Posix.userName) user,
+        fileGroup = maybe "?" (Text.pack . Posix.groupName) group,
         fileType = fileTypeFromStatus stat,
         fileLinkType = fileTypeFromStatus <$> linkStat,
         fileLinkTarget = linkTarget
