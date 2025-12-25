@@ -28,21 +28,30 @@ mkEditor = Editor.editor FocusCmdline (Just 1)
 
 mkEmptyAppState :: Configuration -> AppState
 mkEmptyAppState config =
-  AppState
-    { stateFiles = L.list FocusMain (Vec.fromList []) 1,
-      stateMessage = Nothing,
-      stateCmdlineEditor = mkEditor "",
-      stateFocusTarget = FocusMain,
-      stateListPositionHistory = Map.empty,
-      stateFileSelections = Set.empty,
-      stateCwd = "",
-      stateKeyMap = configKeymap config,
+  applyConfigToState config $
+    AppState
+      { stateFiles = L.list FocusMain (Vec.fromList []) 1,
+        stateMessage = Nothing,
+        stateCmdlineEditor = mkEditor "",
+        stateFocusTarget = FocusMain,
+        stateListPositionHistory = Map.empty,
+        stateFileSelections = Set.empty,
+        stateCwd = "",
+        stateKeyMap = Map.empty,
+        stateOpenerScript = Nothing,
+        stateKeySequence = [],
+        stateSearchTerm = Nothing,
+        stateSearchMatches = Vec.empty,
+        stateCustomCommands = Map.empty,
+        stateSearchIndex = 0
+      }
+
+applyConfigToState :: Configuration -> AppState -> AppState
+applyConfigToState config state =
+  state
+    { stateKeyMap = configKeymap config,
       stateOpenerScript = configOpener config,
-      stateKeySequence = [],
-      stateSearchTerm = Nothing,
-      stateSearchMatches = Vec.empty,
-      stateCustomCommands = configCommands config,
-      stateSearchIndex = 0
+      stateCustomCommands = configCommands config
     }
 
 toggleSetItem :: (Ord a) => a -> Set.Set a -> Set.Set a

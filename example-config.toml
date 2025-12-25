@@ -1,10 +1,16 @@
 opener = """
-echo "%F" | while IFS= read file; do
+echo "$files" | while IFS= read file; do
   case "$(file --mime-type "$file" -bL)" in
     image/*) setsid -f sxiv "$file" >/dev/null 2>&1 ;;
     video/*|image/gif) setsid -f mpv "$file" >/dev/null 2>&1 ;;
     application/pdf) setsid -f zathura "$file" >/dev/null 2>&1 ;;
-    *) $EDITOR "$file" ;;
+    *)
+      if isutf8 -q "$file"; then
+        $EDITOR "$file"
+      else
+        setsid -f xdg-open "$file"
+      fi
+    ;;
   esac
 done;
 """
@@ -12,15 +18,15 @@ done;
 [keymap]
 md = "cmdline-set !mkdir -p "
 mf = "cmdline-set !touch "
-cl = ["cmdline-set !ln -s %f ", "selection-clear"]
-rn = ["!!clear; echo '%F' | vidir -v -", "selection-clear"]
-dd = "!clear; echo '%F'; rm -rfIv %f"
-sdd = "!clear; echo '%F'; sudo rm -rfIv %f"
-cc = ["!!clear; echo 'Duplicated %'; cp -r % %.dup", "selection-clear"]
+rn = ["""!! clear; echo "$files" | vidir -v -""", "selection-clear"]
+dd = """! clear; echo "$files"; rm -rfIv %f"""
+sdd = """! clear; echo "$files"; sudo rm -rfIv %f"""
+cc = ["""!! clear; echo "Duplicated $cursor"; cp -r "$cursor" "${cursor}.dup" """, "selection-clear"]
 cp = ["!!cp -irv %s -t %d", "selection-clear"]
 mv = ["!!mv -iv %s -t %d", "selection-clear"]
 
 gdl = "cd ~/Downloads"
+gdm = "cd ~/Downloads/music"
 gdc = "cd ~/Documents"
 gp = "cd ~/Pictures"
 gsc = "cd ~/Pictures/screenshots"
@@ -30,12 +36,17 @@ gdv = "cd ~/dev/projects"
 
 # Clipboard
 yy = """shell
-relpath=$(realpath -s --relative-to="${DAFFM_PATH_RELATIVE_TO:-$PWD}" %)
+relpath=$(realpath -s --relative-to="${DAFFM_PATH_RELATIVE_TO:-$PWD}" "$cursor")
 echo -n "$relpath" | xclip -selection clipboard
 """
-YY = "!echo -n % | xclip -selection clipboard"
+YY = """shell
+echo -n "$cursor" | xclip -selection clipboard
+"""
+yc = """shell
+xclip -selection clipboard -t $(file --mime-type % -bL) -i "$cursor"
+"""
 yf = """shell
-xclip -selection clipboard -t $(file --mime-type % -bL) -i %
+echo "$files" | sed 's|^|file://|' | xclip -selection clipboard -t text/uri-list -i
 """
 
 # Mark directories
@@ -45,17 +56,18 @@ xclip -selection clipboard -t $(file --mime-type % -bL) -i %
 "m4" = """eval echo "<daffm>map <space>4 cd %d" """
 
 # Alt openers
-"<space>du" = "!!dua ."
-"\\xz" = "!!unzip %f"
-"\\x7" = "!!7z x %f"
-"\\xt" = "!!tar xzf %f"
-"\\xr" = "!!unrar x %f"
+"<space>du" = "!!dua i ."
+"\\xz" = """!! unzip "$cursor" """
+"\\x7" = """!! 7z x "$cursor" """
+"\\xt" = """!! tar xzf "$cursor" """
+"\\xr" = """!! unrar x "$cursor" """
+"\\wi" = """!! wine "$cursor" """
 "<space>p" = "preview"
 
 [commands]
 preview = """shell!
 file='%args'
-if [ -z "$file" ]; then file=%; fi
+if [ -z "$file" ]; then file="$cursor"; fi
 clear;
 case "$file" in
   *.bmp|*.jpg|*.jpeg|*.png|*.xpm|*.webp|*.gif) chafa -f kitty $file ;;

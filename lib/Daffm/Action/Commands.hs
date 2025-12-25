@@ -21,6 +21,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import qualified System.Process as Proc
 import Text.Read (readMaybe)
+import System.Environment (getEnvironment)
 
 runCmdline :: AppEvent ()
 runCmdline = do
@@ -67,14 +68,16 @@ parseCommand cmd = mkCmd . splitCmdArgs $ trimStart cmd
       ("", _) -> Nothing
       (cmd', args) -> Just $ CmdCustom cmd' args
 
-readCommandLines :: Text.Text -> IO [Text.Text]
-readCommandLines cmd = do
+readCommandLines :: Map.Map String String -> Text.Text -> IO [Text.Text]
+readCommandLines env cmd = do
+  cmdEnv <- (++ Map.toList env) <$> getEnvironment
   Proc.withCreateProcess
     (Proc.shell $ Text.unpack cmd)
       { Proc.delegate_ctlc = True,
         Proc.std_in = Proc.NoStream,
         Proc.std_out = Proc.CreatePipe,
-        Proc.std_err = Proc.NoStream
+        Proc.std_err = Proc.NoStream,
+        Proc.env = Just cmdEnv
       }
     $ \_ stdout _ p -> do
       _ <- Proc.waitForProcess p
@@ -88,7 +91,8 @@ processCommand (CmdShell waitForKey cmd) args = do
   cmdSubstitutions (argSubst args cmd) >>= suspendAndRunShellCommand waitForKey
   reloadDir
 processCommand (CmdCommandShell cmd) args = do
-  stdout <- cmdSubstitutions (argSubst args cmd) >>= liftIO . readCommandLines
+  env <- gets geCommandEnvFromState
+  stdout <- cmdSubstitutions (argSubst args cmd) >>= liftIO . readCommandLines env
   forM_ stdout runIfCmd
   reloadDir
   where

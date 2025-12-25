@@ -49,7 +49,7 @@ openSelectedFile = do
     Just (FileInfo {filePath, fileType = Directory}) -> loadDir filePath
     Just (FileInfo {filePath, fileLinkType = Just Directory}) -> loadDir filePath
     Just _ -> do
-      opener <- gets (fromMaybe "echo '%F' | xargs -i xdg-open {}" . stateOpenerScript)
+      opener <- gets (fromMaybe "echo \"$files\" | xargs -i xdg-open {}" . stateOpenerScript)
       cmdSubstitutions opener >>= suspendAndRunShellCommand False
     Nothing -> pure ()
 
@@ -74,19 +74,32 @@ cmdSubstitutions cmd = gets (`substitute` cmd)
 -- When exit code is non-zero, it will print it and prompt for key press regardless of waitForKey
 suspendAndRunShellCommand :: Bool -> Text.Text -> AppEvent ()
 suspendAndRunShellCommand waitForKey cmd = do
+  env <- gets geCommandEnvFromState
   suspendAndResume' $ do
-    shellCommand (Text.unpack cmd) Map.empty >>= \case
+    shellCommand (Text.unpack cmd) env >>= \case
       Proc.ExitFailure code -> do
         putStrLn $ "Process exited with " <> show code
         putStrLn "Press any key to continue" >> void getChar
       _ | waitForKey -> putStrLn "Press any key to continue" >> void getChar
       _ -> pure ()
 
+geCommandEnvFromState :: AppState -> Map.Map String String
+geCommandEnvFromState (AppState {stateFileSelections, stateFiles}) = do
+  Map.fromList
+    [ ("files", Text.unpack $ Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCursor),
+      ("selections", Text.unpack $ Text.dropWhileEnd (== '\n') $ Text.unlines selections),
+      ("cursor", Text.unpack cursorFile)
+    ]
+  where
+    cursorFile = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
+    selections = Set.elems stateFileSelections
+    selectionsOrCursor = if Set.null stateFileSelections then [cursorFile] else selections
+
 shellCommand :: String -> Map.Map String String -> IO Proc.ExitCode
 shellCommand cmd env = do
-  currentEnv <- getEnvironment
+  cmdEnv <- (++ Map.toList env) <$> getEnvironment
   Proc.withCreateProcess
-    (Proc.shell cmd) {Proc.delegate_ctlc = True, Proc.env = Just $ currentEnv ++ Map.toList env}
+    (Proc.shell cmd) {Proc.delegate_ctlc = True, Proc.env = Just cmdEnv}
     $ \_ _ _ p -> Proc.waitForProcess p
 
 currentFile :: AppEvent (Maybe FileInfo)

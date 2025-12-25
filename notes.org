@@ -11,6 +11,7 @@
 - [ ] escape % in file paths while substituting
 - [ ] allow updating selection list (:selection-add, :selection-delete)
 - [ ] cmdline history
+- [ ] ignore C-c interrupt in suspended mode
 ** Later
 - [ ] cmdline autocompletion
 - [ ] generalize cd/opener/back?
