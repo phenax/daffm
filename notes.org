@@ -6,16 +6,17 @@
 - [X] handle permissions errors
 - [X] Show error messages (invalid commands/shell errors)
 - [ ] fix issue with pathExists check for ~ expansion
+- [ ] add substution for last directory (or automark on cd)
 - [ ] allow escaping % in commands
 - [ ] escape % in file paths while substituting
 - [ ] allow updating selection list (:selection-add, :selection-delete)
-- [ ] cmdline autocompletion
-- [ ] Use ls for file listing respecting ansi colors?
-- [ ] Generalize cd/opener/back?
-** Later
-- [ ] cross instance selections? (just override keys?)
-- [ ] Show last cmd in cmdline
-- [ ] preserve back directory when going inside symlink to directories
 - [ ] cmdline history
+** Later
+- [ ] cmdline autocompletion
+- [ ] generalize cd/opener/back?
+- [ ] cross instance selections? (just override keys?)
+- [ ] show last cmd in cmdline
+- [ ] preserve back directory when going inside symlink to directories
 - [ ] some caching for file list? (might be good to have for large lists)
 - [ ] watch for changes?
+- [ ] use ls for file listing respecting ansi colors?

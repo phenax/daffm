@@ -4,7 +4,7 @@ import Brick.Types (Context (availWidth), Size (Fixed), Widget (Widget, render),
 import Brick.Widgets.Core (Padding (Max, Pad), TextWidth (textWidth), emptyWidget, hBox, hLimit, padLeft, padRight, str, txt, vBox, vLimit, withAttr, (<+>))
 import Brick.Widgets.Edit (renderEditor)
 import qualified Brick.Widgets.List as L
-import Daffm.Attrs (directoryAttr, directoryLinkAttr, directorySelectedAttr, fileAttr, fileSelectedAttr, invalidLinkAttr, linkAttr, searchMarchAttr)
+import Daffm.Attrs
 import Daffm.Keymap (showKeySequence)
 import Daffm.Types (AppState (..), FileInfo (..), FileType (..), FocusTarget (..))
 import Data.Int (Int64)
@@ -16,19 +16,20 @@ import qualified System.PosixCompat as Posix
 import Text.Printf (printf)
 
 appView :: AppState -> [Widget FocusTarget]
-appView appState@(AppState {stateFiles}) = [ui]
-  where
-    ui = vBox [vLimit 1 header, box, message, vLimit 1 cmdline]
-    header = headerView appState
-    cmdline = cmdlineView appState
-    message = messageView appState
-    box = L.renderListWithIndex (fileItemView appState) True stateFiles
+appView appState =
+  [ vBox
+      [ headerView appState,
+        fileListView appState,
+        messageView appState,
+        vLimit 1 $ cmdlineView appState
+      ]
+  ]
 
 hFixed :: Int -> Widget n -> Widget n
 hFixed w = hLimit w . padRight Max
 
 headerView :: AppState -> Widget n
-headerView (AppState {stateCwd}) = Widget Fixed Fixed $ do
+headerView (AppState {stateCwd}) = vLimit 1 $ Widget Fixed Fixed $ do
   c <- getContext
   let width = availWidth c - 2 -- with padding
   render . toWidget . trunc width $ stateCwd
@@ -38,33 +39,39 @@ headerView (AppState {stateCwd}) = Widget Fixed Fixed $ do
       | width < textWidth text = "…" <> Text.takeEnd (width - 1) text
       | otherwise = Text.takeEnd width text
 
+fileListView :: AppState -> Widget FocusTarget
+fileListView appState@(AppState {stateFiles}) =
+  L.renderListWithIndex (fileItemView appState) True stateFiles
+
 fileItemView :: AppState -> Int -> Bool -> FileInfo -> Widget FocusTarget
-fileItemView appState index sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode}) =
+fileItemView appState index sel fileInfo@(FileInfo {filePath, fileSize, fileType, fileMode, fileUser, fileGroup}) =
   hBox
     [ hFixed 2 fileSelectionView,
+      hFixed 1 $ fileTypeView fileType,
       hFixed 10 $ fileModeView fileMode,
-      hFixed 6 $ fileTypeView fileType,
+      hFixed 16 $ fileOwnerView fileUser fileGroup,
       hFixed 7 $ fileSizeView fileSize,
       fileNameView sel fileInfo,
       searchMatchIndicatorView
     ]
   where
     fileSizeView = txt . prettyFileSize . fromIntegral
-    fileTypeView = txt . showFileType
-    fileModeView = txt . showFileMode
+    fileTypeView = withAttr fileTypeAttr . txt . showFileType
+    fileModeView = withAttr fileModeAttr . txt . showFileMode
+    fileOwnerView user group = withAttr fileOwnerAttr . txt $ user <> ":" <> group
     fileSelectionView = txt $ if Set.member filePath $ stateFileSelections appState then ">" else " "
     searchMatchIndicatorView
       | index `Vec.elem` stateSearchMatches appState = padLeft (Pad 1) $ withAttr searchMarchAttr $ txt "*"
       | otherwise = emptyWidget
 
 showFileType :: FileType -> Text.Text
-showFileType Directory = "dir"
-showFileType SymbolicLink = "link"
-showFileType UnixSocket = "sock"
-showFileType NamedPipe = "pipe"
-showFileType CharacterDevice = "cdev"
-showFileType BlockDevice = "bdev"
-showFileType RegularFile = "file"
+showFileType Directory = "d"
+showFileType SymbolicLink = "l"
+showFileType UnixSocket = "s"
+showFileType NamedPipe = "p"
+showFileType CharacterDevice = "c"
+showFileType BlockDevice = "b"
+showFileType RegularFile = "-"
 showFileType UnknownFileType = "?"
 
 showFileMode :: FileMode -> Text.Text
@@ -108,7 +115,9 @@ messageView _ = emptyWidget
 
 cmdlineView :: AppState -> Widget FocusTarget
 cmdlineView (AppState {stateFocusTarget = FocusCmdline, stateCmdlineEditor}) =
-  txt ":" <+> renderEditor (txt . Text.unlines) True stateCmdlineEditor
+  txt ":" <+> editor
+  where
+    editor = renderEditor (txt . Text.unlines) True stateCmdlineEditor
 cmdlineView (AppState {stateFocusTarget = FocusMain, stateFiles, stateFileSelections, stateKeySequence}) =
   hBox
     [ txt ":",

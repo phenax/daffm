@@ -42,6 +42,7 @@ common common-config
     text,
     text-zipper <= 0.13,
     unix-compat <= 0.7.4.1,
+    unix <= 2.8.8.0,
     vector,
     vty
 

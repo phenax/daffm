@@ -19,8 +19,8 @@ import qualified Data.Text.Zipper.Generic as Zipper
 import qualified Data.Vector as Vec
 import System.Directory (doesPathExist, getCurrentDirectory, getHomeDirectory, getPermissions, getSymbolicLinkTarget, listDirectory, makeAbsolute, readable, setCurrentDirectory)
 import System.FilePath (joinPath, takeDirectory)
-import System.PosixCompat (fileExist)
 import qualified System.PosixCompat as Posix
+import qualified System.Posix.User as Posix
 
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
 mkEditor = Editor.editor FocusCmdline (Just 1)
@@ -137,12 +137,16 @@ getFileInfo name = do
     if
       | Posix.isSymbolicLink stat -> Just . Text.pack <$> getSymbolicLinkTarget path
       | otherwise -> pure Nothing
+  user <- Posix.getUserEntryForID $ Posix.fileOwner stat
+  group <- Posix.getGroupEntryForID $ Posix.fileGroup stat
   pure $
     FileInfo
       { filePath = Text.pack path,
         fileName = name,
         fileSize = Posix.fileSize stat,
         fileMode = Posix.fileMode stat,
+        fileUser = Text.pack . Posix.userName $ user,
+        fileGroup = Text.pack . Posix.groupName $ group,
         fileType = fileTypeFromStatus stat,
         fileLinkType = fileTypeFromStatus <$> linkStat,
         fileLinkTarget = linkTarget
@@ -179,5 +183,5 @@ cacheDirPosition appState@(AppState {stateListPositionHistory, stateCwd, stateFi
 
 filterInvalidSelections :: AppState -> IO AppState
 filterInvalidSelections st = do
-  selections <- filterM (fileExist . Text.unpack) . Set.elems $ stateFileSelections st
+  selections <- filterM (Posix.fileExist . Text.unpack) . Set.elems $ stateFileSelections st
   pure $ st {stateFileSelections = Set.fromList selections}

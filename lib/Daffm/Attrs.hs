@@ -9,6 +9,15 @@ import qualified Graphics.Vty as V
 fileAttr :: A.AttrName
 fileAttr = listAttr <> A.attrName "file"
 
+fileTypeAttr :: A.AttrName
+fileTypeAttr = listAttr <> A.attrName "file-type"
+
+fileModeAttr :: A.AttrName
+fileModeAttr = listAttr <> A.attrName "file-mode"
+
+fileOwnerAttr :: A.AttrName
+fileOwnerAttr = listAttr <> A.attrName "file-owner"
+
 fileSelectedAttr :: A.AttrName
 fileSelectedAttr = listSelectedAttr <> fileAttr
 
@@ -42,6 +51,9 @@ appAttrMap =
       (linkAttr, fg V.brightWhite),
       (invalidLinkAttr, fg V.red),
       (fileAttr, fg V.white),
+      (fileTypeAttr, fg V.white),
+      (fileOwnerAttr, (fg V.white) { V.attrStyle = V.SetTo V.dim }),
+      (fileModeAttr, fg V.white),
       (fileSelectedAttr, fg V.white),
       (searchMarchAttr, fg V.magenta)
     ]

@@ -30,6 +30,8 @@ data FileInfo = FileInfo
     fileSize :: FileOffset,
     fileMode :: FileMode,
     fileType :: FileType,
+    fileUser :: Text.Text,
+    fileGroup :: Text.Text,
     fileLinkType :: Maybe FileType,
     fileLinkTarget :: Maybe FilePathText
   }
