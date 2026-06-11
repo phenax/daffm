@@ -27,8 +27,8 @@ import qualified System.PosixCompat as Posix
 mkEditor :: (Zipper.GenericTextZipper a) => a -> Editor.Editor a FocusTarget
 mkEditor = Editor.editor FocusCmdline (Just 1)
 
-mkEmptyAppState :: Configuration -> AppState
-mkEmptyAppState config =
+mkEmptyAppState :: Configuration -> FilePathText -> AppState
+mkEmptyAppState config initPath =
   applyConfigToState config $
     AppState
       { stateFiles = L.list FocusMain (Vec.fromList []) 1,
@@ -44,7 +44,8 @@ mkEmptyAppState config =
         stateSearchTerm = Nothing,
         stateSearchMatches = Vec.empty,
         stateCustomCommands = Map.empty,
-        stateSearchIndex = 0
+        stateSearchIndex = 0,
+        stateInitPath = initPath
       }
 
 applyConfigToState :: Configuration -> AppState -> AppState

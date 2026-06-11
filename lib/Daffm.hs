@@ -19,6 +19,6 @@ app =
     }
 
 initApp :: FilePathText -> Configuration -> IO ()
-initApp dir config = do
-  initialState <- loadDirToState dir $ mkEmptyAppState config
+initApp initPath config = do
+  initialState <- loadDirToState initPath $ mkEmptyAppState config initPath
   void $ B.defaultMain app initialState

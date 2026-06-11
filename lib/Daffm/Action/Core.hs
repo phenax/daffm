@@ -57,17 +57,31 @@ cmdSubstitutions :: Text.Text -> AppEvent Text.Text
 cmdSubstitutions cmd = gets (`substitute` cmd)
   where
     escape = (\s -> "'" <> s <> "'") . Text.replace "'" "'\\''"
-    substitute (AppState {stateFiles, stateCwd, stateFileSelections}) =
+    substitute (AppState {stateFiles, stateCwd, stateFileSelections, stateInitPath}) =
       Text.replace "%" (escape cursorFile)
         . Text.replace "%d" (escape stateCwd)
         . Text.replace "%s" (Text.unwords $ map escape selections)
         . Text.replace "%S" (Text.dropWhileEnd (== '\n') $ Text.unlines selections)
         . Text.replace "%f" (Text.unwords $ map escape selectionsOrCursor)
         . Text.replace "%F" (Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCursor)
+        . Text.replace "%0" (escape stateInitPath)
       where
         cursorFile = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
         selections = Set.elems stateFileSelections
         selectionsOrCursor = if Set.null stateFileSelections then [cursorFile] else selections
+
+geCommandEnvFromState :: AppState -> Map.Map String String
+geCommandEnvFromState (AppState {stateFileSelections, stateFiles, stateInitPath}) = do
+  Map.fromList
+    [ ("files", Text.unpack $ Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCursor),
+      ("selections", Text.unpack $ Text.dropWhileEnd (== '\n') $ Text.unlines selections),
+      ("init_path", Text.unpack $ stateInitPath),
+      ("cursor", Text.unpack cursorFile)
+    ]
+  where
+    cursorFile = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
+    selections = Set.elems stateFileSelections
+    selectionsOrCursor = if Set.null stateFileSelections then [cursorFile] else selections
 
 -- Suspend tui and run shell command
 -- When waitForKey is true, it will prompt for a key press on success
@@ -82,18 +96,6 @@ suspendAndRunShellCommand waitForKey cmd = do
         putStrLn "Press any key to continue" >> void getChar
       _ | waitForKey -> putStrLn "Press any key to continue" >> void getChar
       _ -> pure ()
-
-geCommandEnvFromState :: AppState -> Map.Map String String
-geCommandEnvFromState (AppState {stateFileSelections, stateFiles}) = do
-  Map.fromList
-    [ ("files", Text.unpack $ Text.dropWhileEnd (== '\n') $ Text.unlines selectionsOrCursor),
-      ("selections", Text.unpack $ Text.dropWhileEnd (== '\n') $ Text.unlines selections),
-      ("cursor", Text.unpack cursorFile)
-    ]
-  where
-    cursorFile = maybe "" (filePath . snd) . L.listSelectedElement $ stateFiles
-    selections = Set.elems stateFileSelections
-    selectionsOrCursor = if Set.null stateFileSelections then [cursorFile] else selections
 
 shellCommand :: String -> Map.Map String String -> IO Proc.ExitCode
 shellCommand cmd env = do

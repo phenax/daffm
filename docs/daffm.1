@@ -119,7 +119,7 @@ Same as shell but it adds a "Press any key to continue" prompt after the command
 
 
 .SH COMMAND SUBSTITUIONS
-The following pattern (%,%d,%f,%s,%F,%S) are replaced with absolute paths
+The following pattern (%,%d,%f,%s,%F,%S,%0) are replaced with absolute paths
 
 %: File under cursor
 
@@ -132,6 +132,21 @@ The following pattern (%,%d,%f,%s,%F,%S) are replaced with absolute paths
 %f: Same as %s but if there are no selections, uses file under cursor
 
 %F: Same as %S but if there are no selections, uses file under cursor
+
+%0: First path that was loaded when daffm was initialized
+
+
+
+.SH ENV VARIABLES
+In addition to substitutions, there are also some env variables available to access values those substitutions without escaping.
+
+$files:      Same as %f but unescaped
+
+$selections: Same as %s but unescaped
+
+$init_path:  Same as %0 but unescaped
+
+$cursor:     Same as % but unescaped
 
 
 .SH AUTHORS

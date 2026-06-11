@@ -17,5 +17,5 @@ evaluateArgs (Args {argsHelp = True}) = putStrLn Args.helpMenuContents
 evaluateArgs (Args {argsDirOrFile, argsConfigFile}) = do
   cwd <- getCurrentDirectory
   config <- loadConfigFile argsConfigFile
-  let dir = fromMaybe (Text.pack cwd) argsDirOrFile
-  Daffm.initApp dir config
+  let initPath = fromMaybe (Text.pack cwd) argsDirOrFile
+  Daffm.initApp initPath config

@@ -53,7 +53,8 @@ data AppState = AppState
     stateOpenerScript :: Maybe Text.Text,
     stateSearchTerm :: Maybe Text.Text,
     stateSearchMatches :: Vec.Vector Int,
-    stateSearchIndex :: Int
+    stateSearchIndex :: Int,
+    stateInitPath :: FilePathText
   }
   deriving (Show)
 
