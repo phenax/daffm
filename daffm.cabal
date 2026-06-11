@@ -34,7 +34,7 @@ common common-config
     brick <= 2.10,
     tomland <= 1.3.3.3,
     containers <= 0.8,
-    data-default <= 0.8.0.1,
+    data-default <= 0.8.0.2,
     directory <= 1.3.9.0,
     filepath <= 1.5.4.0,
     mtl == 2.3.1,
