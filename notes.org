@@ -6,8 +6,11 @@
 - [X] handle permissions errors
 - [X] Show error messages (invalid commands/shell errors)
 - [X] fix issue with pathExists check for ~ expansion
+- [ ] add substitution for first directory
 - [ ] add substution for last directory (or automark on cd)
+- [ ] add previous directory substitution `%-` + `-` key to jump to last cd
 - [ ] allow escaping % in commands
+- [ ] reload directory after opener
 - [ ] escape % in file paths while substituting
 - [ ] allow updating selection list (:selection-add, :selection-delete)
 - [ ] cmdline history

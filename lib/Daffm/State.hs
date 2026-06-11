@@ -70,11 +70,6 @@ normalizePath (Text.stripPrefix "~/" -> (Just rest)) = do
   pure . Text.pack . joinPath $ [home, Text.unpack rest]
 normalizePath dir = Text.pack <$> makeAbsolute (Text.unpack dir)
 
-withCwdFallback :: FilePathText -> IO (Bool, FilePathText)
-withCwdFallback path = do
-  exists <- doesPathExist $ Text.unpack path
-  if exists then pure (True, path) else (False,) . Text.pack <$> getCurrentDirectory
-
 stripQuotes :: Text.Text -> Text.Text
 stripQuotes txt = fromMaybe txt (double <|> single)
   where
@@ -90,12 +85,14 @@ textAsString f = Text.pack . f . Text.unpack
 
 loadDirToState :: FilePathText -> AppState -> IO AppState
 loadDirToState dir' appState@(AppState {stateCwd, stateListPositionHistory}) = do
-  (pathExists, normalizedDir) <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir' >>= withCwdFallback
-  stat <- Posix.getFileStatus $ Text.unpack normalizedDir
+  normalizedPath <- (normalizePath . stripTrailingSlash . stripQuotes . trim) dir'
+  pathExists <- doesPathExist $ Text.unpack normalizedPath
+  dirPath <- if pathExists then pure normalizedPath else Text.pack <$> getCurrentDirectory
+  stat <- Posix.getFileStatus $ Text.unpack dirPath
   let (dir, targetFilePath) =
         if Posix.isDirectory stat
-          then (normalizedDir, Nothing)
-          else (textAsString takeDirectory normalizedDir, Just normalizedDir)
+          then (dirPath, Nothing)
+          else (textAsString takeDirectory dirPath, Just dirPath)
   isReadable <- readable <$> getPermissions (Text.unpack dir)
   if isReadable
     then do
